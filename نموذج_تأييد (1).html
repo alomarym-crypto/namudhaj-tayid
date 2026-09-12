@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>نموذج تأييد</title>
+
+<!-- إعدادات تشغيل الصفحة كتطبيق مستقل عند إضافتها للشاشة الرئيسية -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="دراسة الأحكام الجزائية">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1b5e20">
+
+<!-- أيقونة الصفحة/التطبيق (مضمّنة داخل الملف، لا تحتاج إنترنت) -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231b5e20'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='white' font-family='Arial, sans-serif' font-weight='bold'%3E\u0645%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231b5e20'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='white' font-family='Arial, sans-serif' font-weight='bold'%3E\u0645%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Sakkal+Majalla:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sakkal Majalla', 'Amiri', 'Traditional Arabic', sans-serif;
+    font-size: 17px;
+    direction: rtl;
+    text-align: right;
+    padding: 16px;
+    background-color: #f4f6f7;
+    color: #2c3e37;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    line-height: 1.5;
+  }
+  .full-width {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+  .page-layout {
+    display: block;
+    width: 100%;
+  }
+  .form-column {
+    width: 100%;
+  }
+  .output-column {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .output-column .card {
+    display: flex;
+    flex-direction: column;
+  }
+  #output_section {
+    display: none;
+  }
+  @media (max-width: 900px) {
+    #output_section #output_result { flex: none; }
+  }
+  h1 {
+    font-size: 22px;
+    color: #1e4620;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #607d8b;
+    font-size: 14px;
+    margin-bottom: 18px;
+  }
+  .progress-indicator {
+    margin-bottom: 16px;
+  }
+  .progress-bar-track {
+    width: 100%;
+    height: 8px;
+    background-color: #dfe6e2;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background-color: #1b5e20;
+    border-radius: 4px;
+    transition: width 0.25s ease;
+  }
+  .progress-label {
+    text-align: center;
+    font-size: 13px;
+    color: #1e4620;
+    font-weight: bold;
+    margin-top: 5px;
+  }
+  .card {
+    background: #ffffff;
+    border: 1px solid #dfe6e2;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .form-group { margin-bottom: 10px; }
+  label { display: block; font-weight: bold; margin-bottom: 3px; color: #1e4620; }
+  input[type="text"], select, textarea {
+    width: 100%; padding: 7px; box-sizing: border-box;
+    border: 1px solid #ccc; border-radius: 4px;
+    font-family: inherit; font-size: 16px;
+    background: #fff;
+  }
+  input[type="text"]:focus, select:focus, textarea:focus {
+    outline: none; border-color: #1b5e20; box-shadow: 0 0 0 2px rgba(27,94,32,0.15);
+  }
+  textarea { resize: vertical; }
+
+  .radio-group-container {
+    display: flex;
+    gap: 15px;
+    background-color: #eef2f5;
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #cfd8dc;
+    margin-bottom: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .radio-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #1e4620;
+  }
+  .radio-option input[type="radio"], .radio-option input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+
+  .btn-container { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+  .btn-row { display: flex; gap: 8px; justify-content: center; }
+  .btn-row button { flex: none; min-width: 130px; }
+  button {
+    flex: 1; padding: 10px; font-family: inherit;
+    font-size: 16px; font-weight: bold; cursor: pointer;
+    border: none; border-radius: 4px;
+    transition: filter 0.15s;
+  }
+  button:hover { filter: brightness(0.92); }
+  .btn-success { background-color: #1b5e20; color: white; }
+  .btn-primary { background-color: #1565c0; color: white; }
+  .btn-secondary { background-color: #0277bd; color: white; }
+  .btn-warning { background-color: #f57c00; color: white; }
+  .btn-danger { background-color: #c62828; color: white; }
+  .btn-add { background-color: #2e7d32; color: white; padding: 5px 12px; margin-top: 5px; margin-bottom: 10px; border-radius: 4px; font-size: 14px; cursor: pointer; flex: none; }
+  .btn-remove { background-color: #b71c1c; color: white; padding: 3px 10px; margin-top: 5px; border-radius: 4px; font-size: 13px; cursor: pointer; float: left; flex: none; }
+  .btn-toggle { background-color: #455a64; color: white; padding: 9px; margin-top: 6px; margin-bottom: 8px; width: 100%; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer; border: none; text-align: center; }
+  .disabled-field { background-color: #eeeeee; cursor: not-allowed; }
+  .parsed-preview { font-size: 13px; color: #1b5e20; margin-top: 4px; font-weight: bold; line-height: 1.5; white-space: pre-line; }
+
+  .defendant-block {
+    background-color: #f0f4f8;
+    border: 1px solid #b0bec5;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+  }
+
+  .collapsible-section {
+    display: none;
+    background-color: #fafafa;
+    border: 1px dashed #78909c;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+  }
+
+  #output_placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: #90a4ae;
+    text-align: center;
+    font-size: 14px;
+  }
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+  .icon-btn {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #eceff1;
+    color: #37474f;
+    border: 1px solid #cfd8dc;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .icon-btn:hover { filter: brightness(0.96); }
+  .font-size-controls {
+    display: flex;
+    gap: 6px;
+    flex: none;
+  }
+  .font-size-controls .icon-btn {
+    padding: 4px 10px;
+    min-width: 32px;
+    text-align: center;
+    justify-content: center;
+  }
+  .icon-btn.active {
+    background-color: #1b5e20;
+    color: #fff;
+    border-color: #1b5e20;
+  }
+  #output_result {
+    width: 100%;
+    min-height: 260px;
+    font-size: 15px;
+    line-height: 1.8;
+    font-family: 'Sakkal Majalla', 'Amiri', serif;
+    background: #fbfdfb;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+    white-space: pre-wrap;
+    overflow-y: auto;
+    outline: none;
+    color: #000;
+  }
+  .review-text-box {
+    width: 100%;
+    font-size: 15px;
+    line-height: 1.8;
+    font-family: 'Sakkal Majalla', 'Amiri', serif;
+    background: #fbfdfb;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+    white-space: pre-wrap;
+    color: #000;
+  }
+  #output_result[contenteditable="true"] {
+    background: #ffffff;
+    border-color: #1b5e20;
+    box-shadow: 0 0 0 2px rgba(27,94,32,0.12);
+  }
+  .dyn-value {
+    color: #c62828;
+    font-weight: bold;
+  }
+  .dyn-boundary {
+    color: #c62828;
+    background-color: transparent;
+    font-weight: bold;
+    padding: 0;
+    border-radius: 0;
+  }
+  .field-missing {
+    border-color: #c62828 !important;
+    border-width: 2px !important;
+    background-color: #fff5f5 !important;
+  }
+
+  .toast-notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #1b5e20;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+    display: none;
+    z-index: 10000;
+    min-width: 250px;
+    text-align: center;
+  }
+  .hint {
+    font-size: 12px;
+    color: #78909c;
+    margin-top: 2px;
+  }
+
+  @media (max-width: 420px) {
+    body { padding: 10px; font-size: 16px; }
+    h1 { font-size: 19px; }
+    .card { padding: 10px; }
+    .btn-row { flex-direction: column; }
+    .btn-row button { width: 100%; }
+    .output-header { flex-wrap: wrap; gap: 6px; }
+  }
+</style>
+</head>
+
+<body>
+
+  <h1>نموذج تأييد</h1>
+  <div style="text-align:center; font-size:11px; color:#90a4ae; margin-bottom:10px;">تاريخ النسخة: 2026-09-10 — جميع الحقوق محفوظة للشيخ محمد حسن العُمري</div>
+
+  <div class="card" id="fill-mode-card" style="display:none;">
+    <label>طريقة تعبئة النموذج</label>
+    <div class="btn-row" style="margin-top:8px;">
+      <button type="button" class="btn-primary" onclick="selectFillMode('paste')">نسخ الصك كاملاً</button>
+      <button type="button" class="btn-secondary" onclick="selectFillMode('manual')">إدخال يدوي</button>
+    </div>
+  </div>
+
+  <div class="progress-indicator" id="progress-indicator" style="display:none;">
+    <div class="progress-bar-track"><div id="progress-bar-fill" class="progress-bar-fill" style="width:0%;"></div></div>
+    <div id="progress-label" class="progress-label">الخطوة ١ من ٦</div>
+  </div>
+
+  <div class="page-layout" id="page-layout-wrapper" style="display:none;">
+  <div class="form-column">
+
+  <div class="card" style="display:none;">
+    <div class="form-group" style="margin-bottom:0;">
+      <label>نوع الدراسة</label>
+      <div class="radio-group-container">
+        <label class="radio-option">
+          <input type="radio" name="action_type_radio" value="تدقيقاً" checked onchange="toggleActionType()">
+          تدقيقاً
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div id="form-body" style="display:none;">
+
+  <div class="card">
+  <label>حكم محكمة الدرجة الأولى</label>
+
+  <div class="form-group" id="field-step-1">
+    <div id="paste-mode-box">
+      <textarea id="smart_verdict_input" rows="3" placeholder="اكتب هنا: رقم الحكم وتاريخه واسم المحكمة والدائرة" oninput="parseVerdictAndDate(this)" onblur="parseVerdictAndDate(this)"></textarea>
+      <div id="parsed_preview" class="parsed-preview" style="display:none;"></div>
+
+      <div id="parsed-values-row" style="display:none; flex-wrap:wrap; gap:8px; margin-top:8px; align-items:stretch;">
+        <div class="card" style="flex:1; min-width:100px; margin-bottom:0; padding:8px;">
+          <label style="font-size:12px; margin-bottom:2px;">رقم الحكم</label>
+          <div id="preview_verdict_num" style="font-weight:bold; color:#1b5e20; font-size:14px; min-height:18px;"></div>
+        </div>
+        <div class="card" style="flex:1; min-width:100px; margin-bottom:0; padding:8px;">
+          <label style="font-size:12px; margin-bottom:2px;">تاريخ الحكم</label>
+          <div id="preview_verdict_date" style="font-weight:bold; color:#1b5e20; font-size:14px; min-height:18px;"></div>
+        </div>
+        <div class="card" style="flex:1; min-width:100px; margin-bottom:0; padding:8px;">
+          <label style="font-size:12px; margin-bottom:2px;">المحكمة</label>
+          <div id="preview_court" style="font-weight:bold; color:#1b5e20; font-size:14px; min-height:18px;"></div>
+        </div>
+        <div class="card" style="flex:1; min-width:100px; margin-bottom:0; padding:8px;">
+          <label style="font-size:12px; margin-bottom:2px;">الدائرة</label>
+          <div id="preview_circuit" style="font-weight:bold; color:#1b5e20; font-size:14px; min-height:18px;"></div>
+        </div>
+        <button type="button" class="icon-btn" onclick="reopenSmartInput()" title="تعديل البيانات" style="flex:none; align-self:center;">✏️ تعديل</button>
+      </div>
+    </div>
+
+    <div id="manual-mode-box" style="display:none;">
+      <div id="manual-step-1">
+        <input type="text" id="manual_verdict_num" inputmode="numeric" placeholder="رقم الحكم" oninput="restrictToDigits(this); manualFieldChanged('txt1', this)">
+      </div>
+      <div id="manual-step-2" style="display:none; margin-top:6px;">
+        <input type="text" id="manual_verdict_date" placeholder="تاريخ الحكم" onblur="formatHijriDateField(this); manualFieldChanged('txt2', this)">
+      </div>
+      <div id="manual-step-3" style="display:none; margin-top:6px;">
+        <select id="manual_court" onchange="manualFieldChanged('cb17', this)">
+          <option value="">المحكمة</option>
+          <option value="مكة المكرمة">مكة المكرمة</option>
+          <option value="جدة">جدة</option>
+          <option value="الطائف">الطائف</option>
+        </select>
+      </div>
+      <div id="manual-step-4" style="display:none; margin-top:6px;">
+        <select id="manual_circuit" onchange="manualFieldChanged('cb18', this)">
+          <option value="">الدائرة</option>
+          <option value="الأولى">الأولى</option>
+          <option value="الثانية">الثانية</option>
+          <option value="الثالثة">الثالثة</option>
+          <option value="الرابعة">الرابعة</option>
+          <option value="الخامسة">الخامسة</option>
+          <option value="السادسة">السادسة</option>
+          <option value="السابعة">السابعة</option>
+          <option value="الثامنة">الثامنة</option>
+          <option value="التاسعة">التاسعة</option>
+          <option value="الأحداث">الأحداث</option>
+        </select>
+      </div>
+    </div>
+
+    <input type="hidden" id="txt1">
+    <input type="hidden" id="txt2">
+    <input type="hidden" id="cb17">
+    <input type="hidden" id="cb18">
+  </div>
+
+  <div class="form-group" id="field-step-2" style="display:none;">
+    <input type="text" id="txt5" inputmode="numeric" placeholder="الرقم الجنائي" oninput="restrictToDigits(this)">
+  </div>
+
+  <div class="form-group" id="field-step-3" style="display:none;">
+    <textarea id="txt6" rows="2" placeholder="الاتهام"></textarea>
+  </div>
+
+  <div class="form-group" id="field-step-4" style="display:none;">
+    <div id="div-txt8_reasoning">
+      <textarea id="txt8_reasoning" rows="2" placeholder="نص تسبيب الدرجة الأولى"></textarea>
+    </div>
+  </div>
+
+  <div class="form-group" id="field-step-5" style="display:none;">
+    <textarea id="txt7" rows="2" placeholder=" نص الحكم "></textarea>
+  </div>
+
+  <div class="form-group" id="field-step-6" style="display:none;">
+    <div id="div-cb14">
+    <select id="cb14">
+      <option value="" disabled selected hidden>تسبيب محكمة الاستئناف</option>
+      <option value="**********">**********</option>
+      <option value="ولأن بينة المدعي العام غير موصلة">ولأن بينة المدعي العام غير موصلة</option>
+      <option value="ولأنه تم إمهال المدعي العام لإحضار البينة ولم يحضرها">ولأنه تم إمهال المدعي العام لإحضار البينة ولم يحضرها</option>
+      <option value="ولأن العقوبة المقدرة في الحكم كافية في الردع والزجر">ولأن العقوبة المقدرة في الحكم كافية في الردع والزجر</option>
+      <option value="ولأن بينة المدعي العام غير موصلة وحيث قد جرى إمهال المدعي العام لإحضار البينة ولم يحضرها ">ولأن بينة المدعي العام غير موصلة وحيث قد جرى إمهال المدعي العام لإحضار البينة ولم يحضرها </option>
+      <option value="ولأن العقوبة المقدرة في الحكم كافية في الردع والزجر فيما قررت الدائرة إدانة المدعى عليه به وبما أن بينة المدعي العام غير موصلة فيما قررت الدائرة عدم إدانة المدعى عليه به">ولأن العقوبة المقدرة في الحكم كافية في الردع والزجر فيما قررت الدائرة إدانة المدعى عليه به وبما أن بينة المدعي العام غير موصلة فيما قررت الدائرة عدم إدانة المدعى عليه به</option>
+      <option value="ولأن العقوبة المقدرة كافية في الردع والزجر وذلك في حق من قررت الدائرة إدانته بما جاء في دعوى المدعي العام، وبما أن بينة المدعي العام غير كافية في حق من قررت الدائرة عدم إدانته">ولأن العقوبة المقدرة كافية في الردع والزجر وذلك في حق من قررت الدائرة إدانته بما جاء في دعوى المدعي العام، وبما أن بينة المدعي العام غير كافية في حق من قررت الدائرة عدم إدانته</option>
+    </select>
+    </div>
+  </div>
+
+  </div>
+
+  <div id="field-step-7" style="display:none;">
+  <div class="form-group">
+    <div class="radio-group-container" style="display: flex !important; flex-direction: row !important; gap: 20px !important; align-items: center !important;">
+      <label class="radio-option" style="display: inline-flex !important; align-items: center !important; width: auto !important; margin: 0 !important; cursor: pointer;">
+        <input type="checkbox" id="chk_prosecutor" onchange="toggleAppellantFields()">
+        <span style="margin-right: 6px;">اعتراض المدعي العام</span>
+      </label>
+      <label class="radio-option" style="display: inline-flex !important; align-items: center !important; width: auto !important; margin: 0 !important; cursor: pointer;">
+        <input type="checkbox" id="chk_defendant" onchange="toggleAppellantFields()">
+        <span style="margin-right: 6px;">اعتراض المدعى عليه</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="form-group" id="div-prosecutor-appeal" style="display:none;">
+    <input type="text" id="txt11" inputmode="numeric" placeholder="رقم طلب اعتراض المدعي العام" oninput="restrictToDigits(this); toggleActionType()">
+  </div>
+
+  <div id="div-defendant-appeals-wrapper" style="display:none;">
+    <div id="defendants-section" class="collapsible-section" style="display:block;">
+      <div id="defendants-container">
+        <div class="defendant-block" id="def-block-1">
+          <label style="color:#0277bd;">اعتراض المدعى عليه (1)</label>
+          <div class="form-group">
+            <input type="text" class="def-name" placeholder="اسم المدعى عليه">
+          </div>
+          <div class="form-group def-num-group" style="display:none;">
+            <input type="text" class="def-num" inputmode="numeric" placeholder="رقم طلب اعتراض المدعى عليه" oninput="restrictToDigits(this); toggleActionType()">
+          </div>
+          <div class="form-group">
+            <textarea class="def-text" rows="2" placeholder="نص لائحة المدعى عليه" oninput="toggleActionType()"></textarea>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="btn-add" onclick="addDefendantBlock()">+ إضافة مدعى عليه آخر</button>
+    </div>
+  </div>
+  </div>
+
+  <div id="field-step-8" style="display:none;">
+  <div class="form-group" id="div-cb15" style="display:none;">
+    <select id="cb15"></select>
+  </div>
+
+  <div class="form-group" id="div-defendant-presence" style="display:none;">
+    <label>حضور المدعى عليه:</label>
+    <div class="radio-group-container">
+      <label class="radio-option">
+        <input type="radio" name="def_presence_radio" value="حضر" checked onchange="updateAttendanceText()">
+        حضر المدعى عليه
+      </label>
+      <label class="radio-option">
+        <input type="radio" name="def_presence_radio" value="لم يحضر" onchange="updateAttendanceText()">
+        لم يحضر المدعى عليه
+      </label>
+    </div>
+  </div>
+
+  <div class="form-group" id="div-cb16" style="display:none;">
+    <label>حضور الجلسة :</label>
+    <textarea id="cb16" rows="4"></textarea>
+  </div>
+  </div>
+
+  </div>
+
+  <div class="btn-container">
+    <div class="btn-row">
+      <button class="btn-success" id="show-review-btn" onclick="showFullStudy()" style="display:none;">عرض الدراسة</button>
+      <button class="btn-primary" id="copy-btn" onclick="copyOutputResult()" style="display:none;">نسخ</button>
+      <button class="btn-warning" id="clear-btn" onclick="confirmClear()">مسح</button>
+    </div>
+  </div>
+
+  </div>
+
+  <div class="output-column">
+  <div class="card" id="output_placeholder" style="display:none;">
+    <p>سيظهر نص الدراسة هنا تلقائياً بعد اكتمال تعبئة الحقول المطلوبة</p>
+  </div>
+
+  <div class="card" id="output_section" style="display:none;">
+    <div class="output-header">
+      <label style="margin-bottom:0;">نص الدراسة</label>
+    </div>
+    <div id="output_result" dir="rtl" contenteditable="false"></div>
+    <div class="btn-container">
+      <div class="btn-row">
+        <button type="button" class="icon-btn" id="study-edit-btn" onclick="toggleStudyEdit()">✏️ تعديل</button>
+        <button type="button" class="icon-btn" onclick="decreaseFontSize()" title="تصغير الخط" aria-label="تصغير الخط">A-</button>
+        <button type="button" class="icon-btn" onclick="increaseFontSize()" title="تكبير الخط" aria-label="تكبير الخط">A+</button>
+        <button class="btn-primary" onclick="copyOutputResult()">نسخ</button>
+        <button class="btn-warning" onclick="confirmClear()">مسح</button>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  </div>
+
+  <div id="toast" class="toast-notification"></div>
+
+  <script>
+    var defendantCount = 1;
+
+    function toggleAppellantFields() {
+      var isProsecutorChecked = document.getElementById('chk_prosecutor').checked;
+      var isDefendantChecked = document.getElementById('chk_defendant').checked;
+
+      var prosecutorDiv = document.getElementById('div-prosecutor-appeal');
+      prosecutorDiv.style.display = isProsecutorChecked ? 'block' : 'none';
+      if (!isProsecutorChecked) {
+        document.getElementById('txt11').value = '';
+      }
+
+      var defWrapper = document.getElementById('div-defendant-appeals-wrapper');
+      defWrapper.style.display = isDefendantChecked ? 'block' : 'none';
+
+      var defNumGroups = document.querySelectorAll('.def-num-group');
+      defNumGroups.forEach(function(group) {
+        group.style.display = isDefendantChecked ? 'block' : 'none';
+        if (!isDefendantChecked) {
+          var numInput = group.querySelector('.def-num');
+          if (numInput) numInput.value = '';
+        }
+      });
+
+      toggleActionType();
+    }
+
+    function getSelectedActionType() {
+      var radio = document.querySelector('input[name="action_type_radio"]:checked');
+      return radio ? radio.value : '';
+    }
+
+    function getSelectedDefPresence() {
+      var radio = document.querySelector('input[name="def_presence_radio"]:checked');
+      return radio ? radio.value : 'حضر';
+    }
+
+    // التحقق من اكتمال الحقول الأساسية قبل السماح بعرض نص الدراسة
+    function isFormComplete() {
+      var actionVal = getSelectedActionType();
+      if (!actionVal) return false;
+
+      var txt1 = document.getElementById('txt1').value.trim();
+      var txt2 = document.getElementById('txt2').value.trim();
+      var cb17 = document.getElementById('cb17').value.trim();
+      var cb18 = document.getElementById('cb18').value.trim();
+      var txt5 = document.getElementById('txt5').value.trim();
+      var txt6 = document.getElementById('txt6').value.trim();
+      var txt7 = document.getElementById('txt7').value.trim();
+      var chkProsecutor = document.getElementById('chk_prosecutor').checked;
+      var chkDefendant = document.getElementById('chk_defendant').checked;
+
+      if (!txt1 || !txt2 || !cb17 || !cb18) return false;
+      if (!txt5) return false;
+      if (!txt6) return false;
+      if (!txt7) return false;
+      if (!chkProsecutor && !chkDefendant) return false;
+
+      // اشتراط رقم الطلب في الاعتراض المختار
+      if (chkProsecutor) {
+        var txt11 = document.getElementById('txt11').value.trim();
+        if (!txt11) return false;
+      }
+      if (chkDefendant) {
+        var defNumFilled = false;
+        document.querySelectorAll('.defendant-block').forEach(function(block) {
+          var numInput = block.querySelector('.def-num');
+          if (numInput && numInput.value.trim() !== '') defNumFilled = true;
+        });
+        if (!defNumFilled) return false;
+      }
+
+      if (actionVal === 'تدقيقاً') {
+        var txt8 = document.getElementById('txt8_reasoning').value.trim();
+        if (!txt8) return false;
+      }
+
+      return true;
+    }
+
+    function setStepDisplay(id, visible) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = visible ? 'block' : 'none';
+    }
+
+    // إظهار مربعات النموذج واحداً تلو الآخر حسب اكتمال ما قبله
+    var pasteRevealAll = false;
+
+    function highlightMissingField(id, shouldHighlight) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (shouldHighlight) {
+        el.classList.add('field-missing');
+      } else {
+        el.classList.remove('field-missing');
+      }
+    }
+
+    function updateStepsVisibility() {
+      var actionVal = getSelectedActionType();
+      if (!actionVal) return;
+      var isTadqiq = (actionVal === 'تدقيقاً');
+
+      var txt1 = document.getElementById('txt1').value.trim();
+      var txt2 = document.getElementById('txt2').value.trim();
+      var cb17 = document.getElementById('cb17').value.trim();
+      var cb18 = document.getElementById('cb18').value.trim();
+      var step1ok = !!(txt1 && txt2 && cb17 && cb18);
+      setStepDisplay('field-step-2', step1ok);
+
+      var txt5 = document.getElementById('txt5').value.trim();
+      var step2ok = step1ok && !!txt5;
+      setStepDisplay('field-step-3', step2ok);
+
+      var txt6 = document.getElementById('txt6').value.trim();
+      var step3ok = step2ok && !!txt6;
+      setStepDisplay('field-step-4', step3ok && isTadqiq);
+
+      var txt8 = document.getElementById('txt8_reasoning').value.trim();
+      var step4ok = isTadqiq ? (step3ok && !!txt8) : step3ok;
+      setStepDisplay('field-step-5', step4ok);
+
+      var txt7 = document.getElementById('txt7').value.trim();
+      var step5ok = step4ok && !!txt7;
+      setStepDisplay('field-step-6', step5ok);
+      setStepDisplay('field-step-7', step5ok);
+
+      var chkProsecutor = document.getElementById('chk_prosecutor').checked;
+      var chkDefendant = document.getElementById('chk_defendant').checked;
+      var txt11 = document.getElementById('txt11').value.trim();
+      var defNumFilled = false;
+      document.querySelectorAll('.defendant-block').forEach(function(block) {
+        var numInput = block.querySelector('.def-num');
+        if (numInput && numInput.value.trim() !== '') defNumFilled = true;
+      });
+      var step7ok = step5ok && ((chkProsecutor && !!txt11) || (chkDefendant && defNumFilled));
+      setStepDisplay('field-step-8', step7ok);
+
+      var copyBtn = document.getElementById('copy-btn');
+      if (copyBtn) copyBtn.style.display = step7ok ? 'inline-flex' : 'none';
+      var showReviewBtn = document.getElementById('show-review-btn');
+      if (showReviewBtn) showReviewBtn.style.display = step7ok ? 'inline-flex' : 'none';
+
+      // تحديث مؤشر التقدم المرئي (6 خطوات أساسية)
+      var totalSteps = 6;
+      var completedCount = [step1ok, step2ok, step3ok, step4ok, step5ok, step7ok].filter(Boolean).length;
+      var fillEl = document.getElementById('progress-bar-fill');
+      var labelEl = document.getElementById('progress-label');
+      if (fillEl) fillEl.style.width = Math.round((completedCount / totalSteps) * 100) + '%';
+      if (labelEl) {
+        if (completedCount >= totalSteps) {
+          labelEl.innerText = 'تم اكتمال جميع الحقول ✔';
+        } else {
+          var currentStepNum = completedCount + 1;
+          var arabicNums = ['٠','١','٢','٣','٤','٥','٦'];
+          labelEl.innerText = 'الخطوة ' + arabicNums[currentStepNum] + ' من ' + arabicNums[totalSteps];
+        }
+      }
+    }
+
+    function updateAttendanceText() {
+      var baseText = "وفي هذه الجلسة حضر المدعي العام د/ عبدالمجيد يوسف الوابل المكلف بعمل الإدعاء العام لدينا بموجب خطاب تكليفه رقم 31383 وتاريخ 18 / 02 / 1447هـ وجرى سؤاله هل لديك إضافة على ما سبق فقال اكتفي بما تقدم في الصك واللائحة الإعتراضية هكذا قال،";
+      var presenceType = getSelectedDefPresence();
+      var extraText = "";
+
+      if (presenceType === "حضر") {
+        extraText = " كما حضر المدعى عليه وجرى سؤاله هل لديك إضافة على ما سبق فقال اكتفي بما تقدم هكذا قال عليه قررت الدائرة قفل باب المرافعة والنطق بالحكم";
+      } else if (presenceType === "لم يحضر") {
+        extraText = " ولم يحضر المدعى عليه ولا من ينوب عنه رغم تبلغه بموعد الجلسة لذا فقد قررت الدائرة رفع الجلسة";
+      }
+
+      document.getElementById('cb16').value = baseText + extraText;
+    }
+
+    function toggleSection(sectionId, btnElement, labelText) {
+      var section = document.getElementById(sectionId);
+      if (section.style.display === 'block') {
+        section.style.display = 'none';
+        btnElement.innerText = '+ عرض ' + labelText;
+      } else {
+        section.style.display = 'block';
+        btnElement.innerText = '- إخفاء ' + labelText;
+      }
+    }
+
+    function hijriMonthName(monthNum) {
+      var months = ["محرم", "صفر", "ربيع الأول", "ربيع الاخر", "جمادى الأولى", "جمادى الاخرة",
+                    "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"];
+      var idx = parseInt(monthNum, 10) - 1;
+      return (idx >= 0 && idx < 12) ? months[idx] : "";
+    }
+
+    function formatHijriDateField(element) {
+      var val = element.value.trim();
+      if (!val) return;
+      var m = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (!m) return;
+      var monthName = hijriMonthName(m[2]);
+      if (!monthName) return;
+      element.value = parseInt(m[1], 10) + monthName + m[3];
+    }
+
+    // تبحث عن سطر يطابق أحد التسميات المعطاة تماماً، وتُرجع أول سطر غير فارغ يليه
+    function getValueAfterLabel(text, labels) {
+      var lines = text.split('\n');
+      for (var i = 0; i < lines.length; i++) {
+        var trimmed = lines[i].trim();
+        if (labels.indexOf(trimmed) !== -1) {
+          for (var j = i + 1; j < lines.length; j++) {
+            var val = lines[j].trim();
+            if (val !== '') return val;
+          }
+        }
+      }
+      return null;
+    }
+
+    function parseVerdictAndDate(element) {
+      var text = element.value;
+      if (!text) {
+        document.getElementById('txt1').value = "";
+        document.getElementById('txt2').value = "";
+        document.getElementById('cb17').value = "";
+        document.getElementById('cb18').value = "";
+        document.getElementById('parsed_preview').innerText = "";
+        document.getElementById('preview_verdict_num').innerText = "";
+        document.getElementById('preview_verdict_date').innerText = "";
+        document.getElementById('preview_court').innerText = "";
+        document.getElementById('preview_circuit').innerText = "";
+        pasteRevealAll = false;
+        return;
+      }
+
+      pasteRevealAll = true;
+
+      // ===== رقم الحكم: أولاً بصيغة "تسمية في سطر + قيمة بالسطر التالي"، وإلا أول رقم طويل بالنص =====
+      var verdictNum = getValueAfterLabel(text, ['رقم الحكم']);
+      if (!verdictNum) {
+        var verdictMatch = text.match(/\b\d{5,}\b/);
+        verdictNum = verdictMatch ? verdictMatch[0] : "";
+      }
+
+      // ===== تاريخ إصدار الحكم (وليس تاريخ النطق): بنفس أسلوب التسمية/القيمة، وإلا حسب المواقع كما كان =====
+      var targetDate = getValueAfterLabel(text, ['تاريخ اصدار الحكم', 'تاريخ إصدار الحكم']);
+      if (targetDate) {
+        var dm = targetDate.match(/\d{1,2}\/\d{1,2}\/\d{4}/);
+        targetDate = dm ? dm[0] : null;
+      }
+      if (!targetDate) {
+        var dateMatches = text.match(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/g);
+        if (dateMatches && dateMatches.length >= 3) {
+          targetDate = dateMatches[2];
+        } else if (dateMatches && dateMatches.length >= 1) {
+          targetDate = dateMatches[dateMatches.length - 1];
+        } else {
+          targetDate = "";
+        }
+      }
+
+      // ===== المحكمة: من قيمة تسمية "المحكمة" إن وُجدت، وإلا من كامل النص =====
+      var courtInput = document.getElementById('cb17');
+      var courtSearchText = getValueAfterLabel(text, ['المحكمة']) || text;
+      var courtName = "";
+      if (courtSearchText.includes("مكة")) {
+        courtName = "مكة المكرمة";
+      } else if (courtSearchText.includes("الطائف")) {
+        courtName = "الطائف";
+      } else if (courtSearchText.includes("جدة") || courtSearchText.includes("جده")) {
+        courtName = "جدة";
+      }
+      courtInput.value = courtName;
+
+      // ===== الدائرة: من قيمة تسمية "الدائرة" إن وُجدت، وإلا من كامل النص =====
+      var circuitInput = document.getElementById('cb18');
+      var circuitSearchText = getValueAfterLabel(text, ['الدائرة']) || text;
+      var circuitName = "";
+      var circuitOptions = ["الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة", "السابعة", "الثامنة", "التاسعة", "الأحداث"];
+
+      for (var i = 0; i < circuitOptions.length; i++) {
+        if (circuitSearchText.includes(circuitOptions[i])) {
+          circuitName = circuitOptions[i];
+          break;
+        }
+      }
+      circuitInput.value = circuitName;
+
+      document.getElementById('txt1').value = verdictNum;
+
+      var formattedDate = "";
+      if (targetDate) {
+        var dateParts = targetDate.split('/');
+        var dayNum = parseInt(dateParts[0], 10);
+        var monthName = hijriMonthName(dateParts[1]);
+        var yearNum = dateParts[2];
+        formattedDate = dayNum + monthName + yearNum;
+        document.getElementById('txt2').value = formattedDate;
+        updatePreview(verdictNum, formattedDate, courtName, circuitName);
+      } else {
+        document.getElementById('txt2').value = "";
+        updatePreview(verdictNum, "", courtName, circuitName);
+      }
+
+      // تحديث صف المعاينة المباشرة أعلى المربع الأول بالقيم الأربعة الموزَّعة
+      document.getElementById('preview_verdict_num').innerText = verdictNum;
+      document.getElementById('preview_verdict_date').innerText = formattedDate;
+      document.getElementById('preview_court').innerText = courtName;
+      document.getElementById('preview_circuit').innerText = circuitName;
+
+      // إذا نجح توزيع القيم الأربعة كاملةً، أخفِ مربع اللصق وأظهر صف المعاينة بدلاً منه
+      if (verdictNum && formattedDate && courtName && circuitName) {
+        document.getElementById('smart_verdict_input').style.display = 'none';
+        document.getElementById('parsed-values-row').style.display = 'flex';
+      } else {
+        document.getElementById('smart_verdict_input').style.display = 'block';
+        document.getElementById('parsed-values-row').style.display = 'none';
+      }
+
+      // استخراج إضافي: الرقم الجنائي، الاتهام، تسبيب الدرجة الأولى، نص الحكم
+      extractAdditionalFieldsFromText(text, verdictNum);
+
+      updateStepsVisibility();
+    }
+
+    // إزالة علامات التشكيل العربية (فتحة، ضمة، كسرة، شدة، سكون...) من نص للمقارنة فقط
+    function stripDiacritics(str) {
+      return str.replace(/[\u064B-\u065F\u0670]/g, '');
+    }
+
+    // أداة مساعدة: تبحث عن أقرب كلمة (من قائمة كلمات مرشحة) تظهر بعد موضع معين، بغض النظر عن وجود تشكيل
+    // (تُرجع مواضع صحيحة في النص الأصلي رغم أن المطابقة تتم على نسخة بلا تشكيل)
+    function findEarliestKeyword(text, keywords, fromIndex) {
+      fromIndex = fromIndex || 0;
+      var clean = '', indexMap = [];
+      for (var i = 0; i < text.length; i++) {
+        if (/[\u064B-\u065F\u0670]/.test(text[i])) continue;
+        clean += text[i];
+        indexMap.push(i);
+      }
+      var cleanFromIndex = indexMap.length;
+      for (var j = 0; j < indexMap.length; j++) {
+        if (indexMap[j] >= fromIndex) { cleanFromIndex = j; break; }
+      }
+
+      var bestCleanIndex = -1, bestKeyword = null, bestCleanKw = null;
+      keywords.forEach(function(kw) {
+        var cleanKw = stripDiacritics(kw); // إزالة التشكيل من كلمة البحث نفسها أيضاً (مثل التنوين في "نظاماً")
+        var idx = clean.indexOf(cleanKw, cleanFromIndex);
+        if (idx !== -1 && (bestCleanIndex === -1 || idx < bestCleanIndex)) {
+          bestCleanIndex = idx;
+          bestKeyword = kw;
+          bestCleanKw = cleanKw;
+        }
+      });
+      if (bestCleanIndex === -1) return null;
+
+      var origStart = indexMap[bestCleanIndex];
+      var origEndCleanIndex = bestCleanIndex + bestCleanKw.length - 1;
+      var origEnd = indexMap[origEndCleanIndex] + 1;
+      return { index: origStart, keyword: bestKeyword, length: origEnd - origStart };
+    }
+
+    // أداة مساعدة: تجد كل الأسطر التي تحتوي على كلمة بعينها فقط (سطر مستقل بذاته)، بغض النظر عن التشكيل
+    function findStandaloneLineMatches(text, keyword) {
+      var results = [];
+      var lines = text.split('\n');
+      var pos = 0;
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        var trimmed = stripDiacritics(line).trim().replace(/^[\s:：\-–ـ]+/, '').replace(/[\s:：\-–ـ]+$/, '').trim();
+        if (trimmed === keyword) {
+          results.push({ startIndex: pos, lineLength: line.length });
+        }
+        pos += line.length + 1; // +1 لحرف السطر الجديد
+      }
+      return results;
+    }
+
+    // أول سطر مستقل بكلمة معينة يظهر بعد موضع محدد
+    function findFirstStandaloneLineAfter(text, keyword, fromIndex) {
+      var matches = findStandaloneLineMatches(text, keyword);
+      for (var i = 0; i < matches.length; i++) {
+        if (matches[i].startIndex >= fromIndex) return matches[i];
+      }
+      return null;
+    }
+
+    // محاولة استخراج الحقول الإضافية من نص الصك الملصق بناءً على الكلمات الاستدلالية المحددة
+    // تنظيف النص من فواصل الأسطر والمسافات الزائدة وترتيبه كفقرة متصلة واحدة
+    function cleanupWhitespace(text) {
+      return text.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    }
+
+    function extractAdditionalFieldsFromText(text, excludeNumber) {
+      // ===== أدوات مساعدة خاصة بالأقواس (تُستخدم فقط في الحالات غير المؤكدة) =====
+      var parenSpans = [];
+      var parenRe = /\(([^)]*)\)/g, parenMatch;
+      while ((parenMatch = parenRe.exec(text)) !== null) {
+        parenSpans.push([parenMatch.index, parenMatch.index + parenMatch[0].length]);
+      }
+      function isInsideParens(idx) {
+        for (var k = 0; k < parenSpans.length; k++) {
+          if (idx >= parenSpans[k][0] && idx < parenSpans[k][1]) return true;
+        }
+        return false;
+      }
+      function findFirstMatch(regex) {
+        var re = new RegExp(regex.source, 'g');
+        var m;
+        while ((m = re.exec(text)) !== null) {
+          if (!excludeNumber || m[1] !== excludeNumber) return m[1];
+        }
+        return null;
+      }
+      function findFirstOutsideParens(regex) {
+        var re = new RegExp(regex.source, 'g');
+        var m;
+        while ((m = re.exec(text)) !== null) {
+          var groupIndex = m.index + m[0].lastIndexOf(m[1]);
+          if (isInsideParens(groupIndex)) continue;
+          if (excludeNumber && m[1] === excludeNumber) continue;
+          return m[1];
+        }
+        return null;
+      }
+
+      // ===== الرقم الجنائي =====
+      // يدعم الأرقام الغربية (0-9) والهندية العربية (٠-٩) معاً، ثم يُطبَّع الناتج دائماً لأرقام غربية
+      function normalizeDigits(str) {
+        var eastern = '٠١٢٣٤٥٦٧٨٩';
+        return str.replace(/[٠-٩]/g, function(ch) { return String(eastern.indexOf(ch)); });
+      }
+      var D = '[0-9\u0660-\u0669]'; // صنف يقبل أي رقم غربي أو هندي عربي
+
+      // 1) بعد عبارة "ذات الرقم الجنائي" أو "بالرقم الجنائي" أو "الرقم الجنائي" (نطاق بحث موسّع لتحمل اختلافات الصياغة): يُقبل حتى لو كان بين قوسين، ويشمل لاحقة "م" حتى بدون رقم بعدها
+      // 2) بعد حرف "م" منفرد بدون تسمية صريحة: يُستبعد إذا كان بين قوسين
+      // 3) أي رقم من 6 أرقام فأكثر (كحل أخير): يُستبعد إذا كان بين قوسين
+      // في كل الحالات: يُستبعد رقم الحكم نفسه نهائياً حتى لا يتكرر خطأً كرقم جنائي
+      var crimeNum = findFirstMatch(new RegExp('(?:ذات الرقم الجنائي|بالرقم الجنائي|الرقم الجنائي)[^0-9\u0660-\u0669]{0,30}(' + D + '{6,}(?:م' + D + '*)?)'));
+      if (!crimeNum) crimeNum = findFirstOutsideParens(new RegExp('(?:^|[\\s\\(])م\\s*[\\/:.]?\\s*(' + D + '{6,})'));
+      if (!crimeNum) crimeNum = findFirstOutsideParens(new RegExp('(' + D + '{6,})'));
+      if (crimeNum) {
+        document.getElementById('txt5').value = normalizeDigits(crimeNum);
+      }
+
+      // ===== الاتهام: من بعد "التهمة" (يجب أن تكون كسطر مستقل لتفادي التقاط إشارات عرَضية مثل
+      //   "أقر التهمة المنسوبة إليه" أو "من التهمة المسندة إليه" ضمن أقوال المتهم/الطلبات)
+      //   أو "توجيه الاتهام"/"انتهى التحقيق" (بحث عادي)، أيهما يرد أولاً. إن لم توجد أي منها، يُترك الحقل فارغاً =====
+      var accStartCandidates = [];
+      var accHeadingMatch = findFirstStandaloneLineAfter(text, 'التهمة', 0);
+      if (accHeadingMatch) {
+        accStartCandidates.push({ index: accHeadingMatch.startIndex, length: accHeadingMatch.lineLength + 1 });
+      }
+      var accAltMatch = findEarliestKeyword(text, ['توجيه الاتهام', 'انتهى التحقيق'], 0);
+      if (accAltMatch) {
+        accStartCandidates.push({ index: accAltMatch.index, length: accAltMatch.length });
+      }
+      accStartCandidates.sort(function(a, b) { return a.index - b.index; });
+      var accStart = accStartCandidates.length ? accStartCandidates[0] : null;
+
+      if (accStart) {
+        var accContentStart = accStart.index + accStart.length;
+
+        // نهايات تُضمَّن كآخر كلمات النص
+        var accInclusiveEnd = findEarliestKeyword(text, ['متقرر نظاماً', 'الحق الخاص لا زال قائماً', 'هكذا ادعى', 'ادعى', 'هكذا قدم', 'الحق الخاص انتهى بالتنازل'], accContentStart);
+        // نهايات لا تُضمَّن (يتوقف النص قبلها مباشرة)
+        var accExclusiveEnd = findEarliestKeyword(text, ['وبعرض الدعوى', 'بعرض دعوى المدعي العام', 'وبمواجهة المدعى عليه'], accContentStart);
+
+        var accEnd = null;
+        if (accInclusiveEnd && (!accExclusiveEnd || accInclusiveEnd.index <= accExclusiveEnd.index)) {
+          accEnd = accInclusiveEnd.index + accInclusiveEnd.length;
+        } else if (accExclusiveEnd) {
+          accEnd = accExclusiveEnd.index;
+        }
+
+        if (accEnd !== null) {
+          var accText = text.substring(accContentStart, accEnd).replace(/^[\s:：\-–—_ـ*.,،;؛\/\\|(){}\[\]"'«»]+/, '').trim();
+          accText = accText.replace(/(^|\s)و\s*$/, '').trim();
+          if (accText) {
+            document.getElementById('txt6').value = cleanupWhitespace(accText);
+          }
+        }
+      }
+
+      // ===== تسبيب الدرجة الأولى: من بعد "الأسباب" (سطر مستقل) حتى "الحكم" (سطر مستقل) =====
+      var reasoningHeading = findFirstStandaloneLineAfter(text, 'الأسباب', 0);
+      if (reasoningHeading) {
+        var reasoningContentStart = reasoningHeading.startIndex + reasoningHeading.lineLength + 1;
+        var verdictHeading = findFirstStandaloneLineAfter(text, 'الحكم', reasoningContentStart);
+        if (verdictHeading) {
+          // إن ظهرت إحدى هذه العبارات قبل عنوان "الحكم"، يتوقف التسبيب عندها مباشرة (لا تُضمَّن)
+          var reasoningExclusiveEnd = findEarliestKeyword(text, ['وحيث الحال ما ذُكر', 'منطوقها', 'منطوقه'], reasoningContentStart);
+          var reasoningEndPos = verdictHeading.startIndex;
+          if (reasoningExclusiveEnd && reasoningExclusiveEnd.index < reasoningEndPos) {
+            reasoningEndPos = reasoningExclusiveEnd.index;
+          }
+          var reasoningText = text.substring(reasoningContentStart, reasoningEndPos).trim();
+          if (reasoningText) {
+            document.getElementById('txt8_reasoning').value = cleanupWhitespace(reasoningText);
+          }
+
+          // ===== منطوق الحكم: من بعد "الحكم" (نفس السطر المستقل) حتى أقرب نهاية من:
+          //   "وبذلك حكمت الدائرة" أو "وبهذا حكمت الدائرة" (تُضمَّن في النص، بغض النظر عن وجود تشكيل)
+          //   أو "وللمدعي" (لا تُضمَّن في النص، ينتهي النص قبلها مباشرة)
+          var verdictContentStart = verdictHeading.startIndex + verdictHeading.lineLength + 1;
+          var verdictInclusiveEnd = findEarliestKeyword(text, ['وبذلك حكمت الدائرة', 'وبهذا حكمت الدائرة', 'هذا ما ظهر للدائرة', 'وبه حكمنا'], verdictContentStart);
+          var verdictExclusiveEnd = findEarliestKeyword(text, ['وللمدعي', 'وبالله التوفيق'], verdictContentStart);
+
+          var verdictEndPos = null;
+          if (verdictInclusiveEnd && (!verdictExclusiveEnd || verdictInclusiveEnd.index <= verdictExclusiveEnd.index)) {
+            verdictEndPos = verdictInclusiveEnd.index + verdictInclusiveEnd.length;
+          } else if (verdictExclusiveEnd) {
+            verdictEndPos = verdictExclusiveEnd.index;
+          }
+
+          if (verdictEndPos !== null) {
+            var verdictText = text.substring(verdictContentStart, verdictEndPos).trim();
+            if (verdictText) {
+              document.getElementById('txt7').value = cleanupWhitespace(verdictText);
+            }
+          }
+        }
+      }
+    }
+
+    function updatePreview(num, date, court, circuit) {
+      // تم تعطيل عرض رسالة المعاينة بناءً على طلب المستخدم
+      return;
+    }
+
+    function addDefendantBlock() {
+      defendantCount++;
+      var isDefendantChecked = document.getElementById('chk_defendant').checked;
+      var numDisplay = isDefendantChecked ? 'block' : 'none';
+
+      var container = document.getElementById('defendants-container');
+      var div = document.createElement('div');
+      div.className = 'defendant-block';
+      div.id = 'def-block-' + defendantCount;
+      div.innerHTML =
+        '<button type="button" class="btn-remove" onclick="removeDefendantBlock(' + defendantCount + ')">حذف</button>' +
+        '<label style="color:#0277bd;">اعتراض المدعى عليه (' + defendantCount + ')</label>' +
+        '<div class="form-group"><input type="text" class="def-name" placeholder="اسم المدعى عليه"></div>' +
+        '<div class="form-group def-num-group" style="display:' + numDisplay + ';"><input type="text" class="def-num" inputmode="numeric" placeholder="رقم طلب اعتراض المدعى عليه" oninput="restrictToDigits(this); toggleActionType()"></div>' +
+        '<div class="form-group"><textarea class="def-text" rows="2" placeholder="نص لائحة المدعى عليه" oninput="toggleActionType()"></textarea></div>';
+      container.appendChild(div);
+      toggleActionType();
+    }
+
+    function removeDefendantBlock(id) {
+      var block = document.getElementById('def-block-' + id);
+      if (block) block.remove();
+      toggleActionType();
+    }
+
+    var outputFontSize = 15;
+    function applyOutputFontSize() {
+      document.getElementById('output_result').style.fontSize = outputFontSize + 'px';
+    }
+    function increaseFontSize() {
+      outputFontSize = Math.min(outputFontSize + 2, 26);
+      applyOutputFontSize();
+    }
+    function decreaseFontSize() {
+      outputFontSize = Math.max(outputFontSize - 2, 12);
+      applyOutputFontSize();
+    }
+
+    function restrictToDigits(el) {
+      var cleaned = el.value.replace(/[^0-9]/g, '');
+      if (cleaned !== el.value) el.value = cleaned;
+    }
+
+    function showNotification(message) {
+      var toast = document.getElementById("toast");
+      toast.innerText = message;
+      toast.style.display = "block";
+      setTimeout(function() { toast.style.display = "none"; }, 3000);
+    }
+
+    var selectedFillMode = null;
+
+    // اختيار طريقة تعبئة النموذج: نسخ الصك كاملاً أو إدخال يدوي
+    function selectFillMode(mode) {
+      selectedFillMode = mode;
+      document.getElementById('fill-mode-card').style.display = 'none';
+      document.getElementById('page-layout-wrapper').style.display = 'block';
+
+      var pasteBox = document.getElementById('paste-mode-box');
+      var manualBox = document.getElementById('manual-mode-box');
+      if (mode === 'paste') {
+        pasteBox.style.display = 'block';
+        manualBox.style.display = 'none';
+      } else {
+        pasteBox.style.display = 'none';
+        manualBox.style.display = 'block';
+        pasteRevealAll = false;
+      }
+    }
+
+    // مزامنة حقل الإدخال اليدوي المنفصل مع الحقل المخفي الأساسي، ثم تحديث الخطوات والنص
+    // إعادة إظهار مربع اللصق للتعديل بعد اختفائه التلقائي
+    function reopenSmartInput() {
+      document.getElementById('smart_verdict_input').style.display = 'block';
+      document.getElementById('parsed-values-row').style.display = 'none';
+      document.getElementById('smart_verdict_input').focus();
+    }
+
+    function manualFieldChanged(hiddenId, sourceEl) {
+      document.getElementById(hiddenId).value = sourceEl.value;
+      updateManualSteps();
+      updateStepsVisibility();
+      liveUpdateOutput();
+    }
+
+    // إظهار حقول الإدخال اليدوي واحداً تلو الآخر حسب اكتمال ما قبله
+    function updateManualSteps() {
+      var v1 = document.getElementById('manual_verdict_num').value.trim();
+      var v2 = document.getElementById('manual_verdict_date').value.trim();
+      var v3 = document.getElementById('manual_court').value.trim();
+      document.getElementById('manual-step-2').style.display = v1 ? 'block' : 'none';
+      document.getElementById('manual-step-3').style.display = (v1 && v2) ? 'block' : 'none';
+      document.getElementById('manual-step-4').style.display = (v1 && v2 && v3) ? 'block' : 'none';
+    }
+
+    function toggleActionType() {
+      var actionVal = getSelectedActionType();
+      var formBody = document.getElementById('form-body');
+
+      // إظهار كامل النموذج فقط بعد اختيار أحد الأنواع الثلاثة
+      if (!actionVal) {
+        formBody.style.display = 'none';
+        return;
+      }
+      formBody.style.display = 'block';
+
+      var isMurafeaLike = (actionVal === 'مرافعة' || actionVal === 'منقوضة');
+      var cb15 = document.getElementById('cb15');
+
+      if (isMurafeaLike) {
+        cb15.disabled = false; cb15.classList.remove('disabled-field');
+        document.getElementById('div-txt8_reasoning').style.display = 'none';
+        document.getElementById('div-cb15').style.display = 'block';
+        document.getElementById('div-defendant-presence').style.display = 'block';
+        document.getElementById('div-cb16').style.display = 'block';
+
+        updateAttendanceText();
+
+        var prosecutorNum = document.getElementById('txt11').value.trim();
+        var hasDefendantAppeals = false;
+        var defBlocks = document.querySelectorAll('.defendant-block');
+        defBlocks.forEach(function(block) {
+          var numInput = block.querySelector('.def-num').value.trim();
+          var textInput = block.querySelector('.def-text').value.trim();
+          if (numInput !== "" || textInput !== "") {
+            hasDefendantAppeals = true;
+          }
+        });
+
+        cb15.innerHTML = "";
+        if (!prosecutorNum && !hasDefendantAppeals) {
+          cb15.innerHTML = "";
+        } else if (prosecutorNum !== "" && !hasDefendantAppeals) {
+          cb15.innerHTML = '<option value="قبول اعتراض المدعي العام موضوعاً" selected>قبول اعتراض المدعي العام موضوعاً</option>';
+        } else if (!prosecutorNum && hasDefendantAppeals) {
+          cb15.innerHTML = '<option value="قبول اعتراض المدعى عليه موضوعاً" selected>قبول اعتراض المدعى عليه موضوعاً</option>';
+        } else {
+          cb15.innerHTML = '<option value=""> قبول الاعتراضات </option>' +
+                           '<option value="قبول اعتراض المدعي العام موضوعاً">قبول اعتراض المدعي العام موضوعاً</option>' +
+                           '<option value="قبول اعتراض المدعى عليه موضوعاً">قبول اعتراض المدعى عليه موضوعاً</option>';
+        }
+      } else {
+        cb15.value = ""; cb15.disabled = true; cb15.classList.add('disabled-field');
+        document.getElementById('div-txt8_reasoning').style.display = 'block';
+        document.getElementById('div-cb15').style.display = 'none';
+        document.getElementById('div-defendant-presence').style.display = 'none';
+        document.getElementById('div-cb16').style.display = 'none';
+      }
+
+      updateStepsVisibility();
+    }
+
+
+    function confirmClear() {
+      if (confirm('هل أنت متأكد من مسح جميع الحقول؟ لا يمكن التراجع عن هذا الإجراء.')) {
+        clearAllFields();
+      }
+    }
+
+    function clearAllFields() {
+      var inputs = document.querySelectorAll('input[type="text"]');
+      inputs.forEach(function(input) { input.value = ''; });
+
+      var textareas = document.querySelectorAll('textarea');
+      textareas.forEach(function(textarea) { textarea.value = ''; });
+
+      var selects = document.querySelectorAll('select');
+      selects.forEach(function(select) { select.selectedIndex = 0; });
+
+      document.getElementById('chk_prosecutor').checked = false;
+      document.getElementById('chk_defendant').checked = false;
+      toggleAppellantFields();
+
+      // نموذج التدقيق مخصص لتدقيقاً فقط، فيبقى محدداً دائماً والمربع الأول ظاهراً فارغاً بعد المسح
+      var tadqiqRadio = document.querySelector('input[name="action_type_radio"][value="تدقيقاً"]');
+      if (tadqiqRadio) tadqiqRadio.checked = true;
+      document.getElementById('form-body').style.display = 'block';
+
+      var defaultDefRadio = document.querySelector('input[name="def_presence_radio"][value="حضر"]');
+      if (defaultDefRadio) defaultDefRadio.checked = true;
+
+      document.getElementById('parsed_preview').innerText = "";
+      document.getElementById('preview_verdict_num').innerText = "";
+      document.getElementById('preview_verdict_date').innerText = "";
+      document.getElementById('preview_court').innerText = "";
+      document.getElementById('preview_circuit').innerText = "";
+      document.getElementById('smart_verdict_input').style.display = 'block';
+      document.getElementById('parsed-values-row').style.display = 'none';
+      document.getElementById('txt1').value = "";
+      document.getElementById('txt2').value = "";
+      document.getElementById('cb17').value = "";
+      document.getElementById('cb18').value = "";
+
+      document.getElementById('defendants-container').innerHTML =
+        '<div class="defendant-block" id="def-block-1">' +
+          '<label style="color:#0277bd;">اعتراض المدعى عليه (1)</label>' +
+          '<div class="form-group"><input type="text" class="def-name" placeholder="اسم المدعى عليه"></div>' +
+          '<div class="form-group def-num-group" style="display:none;"><input type="text" class="def-num" inputmode="numeric" placeholder="رقم طلب اعتراض المدعى عليه" oninput="restrictToDigits(this); toggleActionType()"></div>' +
+          '<div class="form-group"><textarea class="def-text" rows="2" placeholder="نص لائحة المدعى عليه" oninput="toggleActionType()"></textarea></div>' +
+        '</div>';
+      defendantCount = 1;
+
+      var sections = document.querySelectorAll('.collapsible-section');
+      sections.forEach(function(sec) { sec.style.display = 'none'; });
+
+      var toggleBtns = document.querySelectorAll('.btn-toggle');
+      toggleBtns.forEach(function(btn) {
+        if (btn.innerText.includes('الاستئناف')) {
+          btn.innerText = '+ عرض بيانات الاستئناف والعليا';
+        }
+      });
+
+      document.getElementById('output_section').style.display = 'none';
+      document.getElementById('output_result').innerHTML = '';
+      document.getElementById('output_result').setAttribute('contenteditable', 'false');
+      document.getElementById('output_placeholder').style.display = 'flex';
+
+      ['field-step-2','field-step-3','field-step-4','field-step-5','field-step-6','field-step-7','field-step-8'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      document.getElementById('copy-btn').style.display = 'none';
+      document.getElementById('show-review-btn').style.display = 'none';
+
+      // إعادة الحالة الأولية: إخفاء كل شيء وإظهار بطاقة اختيار طريقة التعبئة من جديد
+      selectedFillMode = null;
+      pasteRevealAll = false;
+      highlightMissingField('txt5', false);
+      highlightMissingField('txt6', false);
+      highlightMissingField('txt8_reasoning', false);
+      highlightMissingField('txt7', false);
+      document.getElementById('manual-mode-box').style.display = 'none';
+      document.getElementById('manual-step-2').style.display = 'none';
+      document.getElementById('manual-step-3').style.display = 'none';
+      document.getElementById('manual-step-4').style.display = 'none';
+
+      showEditingLayout();
+      lastReviewSegments = null;
+      selectFillMode('paste');
+
+      toggleActionType();
+      showNotification("تم المسح");
+    }
+
+    var DM = "\u0001", DE = "\u0002";
+    function dyn(v) { return DM + v + DE; }
+
+    // علامات لتظليل أول وآخر 5 كلمات بلون مختلف (أصفر) داخل الحقول الطويلة (الاتهام، التسبيب، منطوق الحكم)
+    var YM = "\u0003", YE = "\u0004";
+    function ydyn(v) { return YM + v + YE; }
+
+    // تُرجع النص مع تظليل أول 5 كلمات وآخر 5 كلمات بالأصفر، والوسط بالأحمر العادي (يحافظ على المسافات والأسطر كما هي)
+    function dynWithBoundary(value) {
+      var text = value || '';
+      if (!text.trim()) return '';
+      var wordMatches = [];
+      var re = /\S+/g, m;
+      while ((m = re.exec(text)) !== null) {
+        wordMatches.push({ start: m.index, end: m.index + m[0].length });
+      }
+      var n = 5;
+      if (wordMatches.length === 0) return '';
+      if (wordMatches.length <= n * 2) {
+        return ydyn(text);
+      }
+      var firstEnd = wordMatches[n - 1].end;
+      var lastStart = wordMatches[wordMatches.length - n].start;
+      var firstPart = text.slice(0, firstEnd);
+      var middlePart = text.slice(firstEnd, lastStart);
+      var lastPart = text.slice(lastStart);
+      return ydyn(firstPart) + dyn(middlePart) + ydyn(lastPart);
+    }
+
+    var lastReviewSegments = null;
+
+    function buildFinalText() {
+      var txt1 = document.getElementById('txt1').value, txt2 = document.getElementById('txt2').value;
+      var cb18 = document.getElementById('cb18').value, cb17 = document.getElementById('cb17').value;
+      var txt5 = document.getElementById('txt5').value, txt6 = document.getElementById('txt6').value;
+      var txt7 = document.getElementById('txt7').value, cb13 = getSelectedActionType();
+
+      var txt8_reasoning = document.getElementById('txt8_reasoning').value;
+
+      var cb15 = document.getElementById('cb15').value;
+      var cb16 = document.getElementById('cb16').value;
+      var txt11 = document.getElementById('txt11').value;
+      var cb14 = document.getElementById('cb14').value;
+
+      var attendanceText = "", variableReasoning = "";
+      var prosecutorText = "", defendantText = "", firstVerdict = "", dissentingText = "";
+      var isMurafeaLike = (cb13 === "مرافعة" || cb13 === "منقوضة");
+
+      var actionType = "", reasoningText = "", thirdVerdict = "";
+      if (isMurafeaLike) {
+        actionType = "نقض الحكم المستأنف رقم " + dyn(txt1) + " وتاريخ " + dyn(txt2) + "هـ الصادر من الدائرة " + dyn(cb18) + " بالمحكمة الجزائية بـ" + dyn(cb17) + " فيما قضى به من حكم";
+        reasoningText = "ومن حيث الموضوع فإنه قد ظهر للدائرة مما أورد في طلب الاستئناف ما تؤثر على الحكم ولم يتضمن الحكم المستأنف الرد عليه، ";
+        thirdVerdict = "\nثالثاً: الحكم مجدداً بـ(  ) ا.هـ";
+        attendanceText = dyn(cb16.trim()) + " \n\n";
+      } else {
+        actionType = "تأييد الحكم المستأنف رقم " + dyn(txt1) + " وتاريخ " + dyn(txt2) + "هـ الصادر من الدائرة " + dyn(cb18) + " بالمحكمة الجزائية بـ" + dyn(cb17) + " فيما قضى به من حكم ومنطوقه (" + dynWithBoundary(txt7) + ") ا.هـ";
+        reasoningText = "ومن حيث الموضوع فإنه لم يظهر للدائرة مما أورد في طلب الاستئناف ما تؤثر على الحكم وتضمن الحكم المستأنف الرد عليه، ولأن ما قدمه المستأنف لا يخرج عما سبق أن قدمه أمام محكمة الدرجة الأولى، ولأن أسباب الحكم المستأنف صالحة لبناء الحكم عليها ";
+
+        if (txt8_reasoning && txt8_reasoning.trim() !== "") {
+          variableReasoning = "حيث سببت محكمة الدرجة الأولى حكمها بما نصه: (" + dynWithBoundary(txt8_reasoning.trim()) + ") ا.هـ " + dyn(cb14.trim());
+        } else {
+          variableReasoning = "ومنطوقه: (" + dynWithBoundary(txt7.trim()) + ") ا.هـ " + dyn(cb14.trim());
+        }
+      }
+
+      if (txt11.trim() !== "") {
+        prosecutorText = "وقد تقدم المدعي العام بلائحته الاعتراضية بموجب الطلب رقم (" + dyn(txt11) + ") والمتضمنة (طلبه الحكم له بما تضمنته دعواه وطلباته وأن أدلته والقرائن التي ساقها كافية لإدانة المدعى عليه وعقوبته بعقوبة شديدة.. الخ) ا.هـ\n\n";
+        firstVerdict = (isMurafeaLike && cb15 === "قبول اعتراض المدعي العام موضوعاً") ? "قبول الاستئناف المقدم من المدعي العام شكلاً وموضوعاً" : "قبول الاستئناف المقدم من المدعي العام شكلاً ورفضه موضوعاً";
+      }
+
+      var defBlocks = document.querySelectorAll('.defendant-block');
+      var hasDefendantAppeals = false;
+
+      defBlocks.forEach(function(block) {
+        var nameInput = block.querySelector('.def-name').value.trim();
+        var numInput = block.querySelector('.def-num') ? block.querySelector('.def-num').value.trim() : '';
+        var textInput = block.querySelector('.def-text').value.trim();
+
+        if (nameInput !== "" || numInput !== "" || textInput !== "") {
+          hasDefendantAppeals = true;
+          var nameStr = nameInput !== "" ? " (" + dyn(nameInput) + ")" : "";
+          var numStr = numInput !== "" ? " بموجب الطلب رقم (" + dyn(numInput) + ")" : "";
+          defendantText += "وقد تقدم المدعى عليه" + nameStr + " بلائحة اعتراضية" + numStr + " هذا نصها (" + dyn(textInput) + ") ا.هـ\n\n";
+        }
+      });
+
+      if (hasDefendantAppeals) {
+        var defStatus = (isMurafeaLike && cb15 === "قبول اعتراض المدعى عليه موضوعاً") ? "قبول الاستئناف المقدم من المدعى عليه شكلاً وموضوعاً" : "قبول الاستئناف المقدم من المدعى عليه شكلاً ورفضه موضوعاً";
+        firstVerdict = firstVerdict !== "" ? firstVerdict + "، " + defStatus : defStatus;
+      }
+
+      // ===== بناء المقاطع المُقسَّمة للمراجعة =====
+      var waqiPart = dynWithBoundary(txt6) + ") ا.هـ";
+
+      var ijraatPart = "وبعد نظرها للقضية بسماع الدعوى والإجابة من قبل أطراف القضية، صدر حكمها المشار إليه أعلاه ومنطوقه: (" + dynWithBoundary(txt7) + ") ا.هـ\n\n";
+      ijraatPart += prosecutorText + defendantText;
+      ijraatPart += "ثم قررت هذه الدائرة نظر القضية (" + dyn(cb13) + ")؛ وفقاً لتعميم المجلس الأعلى للقضاء رقم 1298 /ت في 1440/12/3هـ وما جاء في أحكام اللائحة التنفيذية لطرق الاعتراض على الأحكام.";
+
+      var asbabPart = "وبعد الاطلاع ودراسة أوراق القضية والحكم الصادر فيها والاعتراض المقدم من المستأنف فإن الاعتراض مقبول شكلاً، " + reasoningText + variableReasoning + " مما تنتهي معه هذه الدائرة إلى حكمها الآتي منطوقه:";
+
+      var hukmPart = "لذلك حكمت المحكمة بما يلي:\n";
+      hukmPart += "أولاً: " + firstVerdict + ".\n";
+      hukmPart += "ثانياً: " + actionType + ".";
+      if (thirdVerdict !== "") hukmPart += thirdVerdict;
+      if (dissentingText !== "") hukmPart += dissentingText;
+      hukmPart += "\n\nوبالله التوفيق وصلى الله على نبينا محمد وعلى آله وصحبه وسلم.";
+
+      lastReviewSegments = {
+        verdictNum: txt1, verdictDate: txt2, circuit: cb18, court: cb17, crimeNum: txt5,
+        waqi: waqiPart, ijraat: ijraatPart, asbab: asbabPart, hukm: hukmPart
+      };
+
+      var FinalText = "وبما أن وقائع هذه القضية قد أوردها الحكم المستأنف رقم " + dyn(txt1) + " بتاريخ " + dyn(txt2) + "هـ الصادر من الدائرة " + dyn(cb18) + " بالمحكمة الجزائية بـ" + dyn(cb17) + "، فإن الدائرة تحيل إليه منعاً للتكرار، وتتلخص دعوى المدعي العام ذات الرقم الجنائي (" + dyn(txt5) + ") بـ (" + waqiPart + " " + ijraatPart + "\n\n";
+      FinalText += attendanceText;
+      FinalText += asbabPart + "\n\n";
+      FinalText += hukmPart;
+
+      return FinalText;
+    }
+
+    // تحويل النص المُعلَّم إلى HTML ملوّن (المدخلات بالأحمر والنص الثابت بالأسود)
+    function markersToHtml(text) {
+      var escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      var html = '', i = 0;
+      while (i < escaped.length) {
+        var dmIdx = escaped.indexOf(DM, i);
+        var ymIdx = escaped.indexOf(YM, i);
+        if (dmIdx === -1 && ymIdx === -1) { html += escaped.slice(i); break; }
+
+        var isYellow, startIdx;
+        if (dmIdx === -1) { isYellow = true; startIdx = ymIdx; }
+        else if (ymIdx === -1) { isYellow = false; startIdx = dmIdx; }
+        else if (ymIdx < dmIdx) { isYellow = true; startIdx = ymIdx; }
+        else { isYellow = false; startIdx = dmIdx; }
+
+        html += escaped.slice(i, startIdx);
+        var endMarker = isYellow ? YE : DE;
+        var endIdx = escaped.indexOf(endMarker, startIdx);
+        if (endIdx === -1) { html += escaped.slice(startIdx); break; }
+        var content = escaped.slice(startIdx + 1, endIdx);
+        var cssClass = isYellow ? 'dyn-boundary' : 'dyn-value';
+        html += content ? ('<span class="' + cssClass + '">' + content + '</span>') : '';
+        i = endIdx + 1;
+      }
+      return html.replace(/\n/g, '<br>');
+    }
+
+    // إزالة العلامات للحصول على نص عادي (للنسخ)
+    function markersToPlainText(text) {
+      return text.split(DM).join('').split(DE).join('').split(YM).join('').split(YE).join('');
+    }
+
+
+    function copyOutputResult() {
+      var box = document.getElementById('output_result');
+      if (!box.innerHTML.trim()) {
+        if (!isFormComplete()) {
+          showNotification("⚠️ أكمل الحقول المطلوبة أولاً قبل النسخ");
+          return;
+        }
+        var FinalText = buildFinalText();
+        box.innerHTML = markersToHtml(FinalText);
+        box.setAttribute('contenteditable', 'false');
+        document.getElementById('output_placeholder').style.display = 'none';
+        document.getElementById('output_section').style.display = 'none';
+      }
+      var plainText = box.innerText;
+
+      function fallbackCopy() {
+        var ta = document.createElement('textarea');
+        ta.value = plainText;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        try {
+          var ok = document.execCommand('copy');
+          if (ok) showNotification("تم نسخ الدراسة");
+          else showNotification("⚠️ حدث خطأ أثناء عملية النسخ.");
+        } catch (err) {
+          showNotification("⚠️ حدث خطأ أثناء عملية النسخ.");
+        }
+        document.body.removeChild(ta);
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(plainText).then(function() {
+          showNotification("تم نسخ الدراسة");
+        }).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+    }
+
+    function liveUpdateOutput() {
+      var box = document.getElementById('output_result');
+      // لا تكتب فوق النص أثناء تركيز المستخدم على المربع نفسه (أي أثناء الكتابة اليدوية بداخله)
+      if (document.activeElement === box) return;
+
+      if (!isFormComplete()) {
+        box.innerHTML = '';
+        document.getElementById('output_section').style.display = 'none';
+        document.getElementById('output_placeholder').style.display = 'none';
+        return;
+      }
+
+      var FinalText = buildFinalText();
+      box.innerHTML = markersToHtml(FinalText);
+      box.setAttribute('contenteditable', 'true');
+      document.getElementById('output_placeholder').style.display = 'none';
+      document.getElementById('output_section').style.display = 'none';
+    }
+
+    // إظهار نص الدراسة كاملاً في خانة واحدة (بدل المربعات المقسّمة) عند الضغط على "عرض الدراسة"
+    function showFullStudy() {
+      if (!isFormComplete()) return;
+      var box = document.getElementById('output_result');
+      var FinalText = buildFinalText();
+      box.innerHTML = markersToHtml(FinalText);
+      box.setAttribute('contenteditable', 'false');
+      document.getElementById('study-edit-btn').innerText = '✏️ تعديل';
+
+      document.querySelector('.form-column').style.display = 'none';
+      document.getElementById('output_placeholder').style.display = 'none';
+      document.getElementById('output_section').style.display = 'block';
+    }
+
+    // تفعيل/إيقاف التعديل المباشر داخل مربع نص الدراسة
+    function toggleStudyEdit() {
+      var box = document.getElementById('output_result');
+      var isEditable = box.getAttribute('contenteditable') === 'true';
+      box.setAttribute('contenteditable', isEditable ? 'false' : 'true');
+      document.getElementById('study-edit-btn').innerText = isEditable ? '✏️ تعديل' : 'تم';
+      if (!isEditable) box.focus();
+    }
+
+    // إظهار مربعات المراجعة المقسّمة (رقم الحكم/التاريخ/الدائرة/المحكمة/الرقم الجنائي/الوقائع/الأسباب/الحكم)
+    // بدل مربعات الإدخال، بعد اكتمال تعبئة النموذج
+    function showReviewLayout() {
+      if (!lastReviewSegments) return;
+      // لا تُعِد كتابة المحتوى فوق تعديلاتك المباشرة أثناء تفعيل وضع التعديل
+      if (!reviewEditMode) {
+        document.getElementById('review_verdict_num').innerText = lastReviewSegments.verdictNum;
+        document.getElementById('review_verdict_date').innerText = lastReviewSegments.verdictDate;
+        document.getElementById('review_circuit').innerText = lastReviewSegments.circuit;
+        document.getElementById('review_court').innerText = lastReviewSegments.court;
+        document.getElementById('review_crime_num').innerText = lastReviewSegments.crimeNum;
+        document.getElementById('review_waqi').innerHTML = markersToHtml(lastReviewSegments.waqi);
+        document.getElementById('review_ijraat').innerHTML = markersToHtml(lastReviewSegments.ijraat);
+        document.getElementById('review_asbab').innerHTML = markersToHtml(lastReviewSegments.asbab);
+        document.getElementById('review_hukm').innerHTML = markersToHtml(lastReviewSegments.hukm);
+      }
+
+      document.querySelector('.form-column').style.display = 'none';
+      document.querySelector('.output-column').style.display = 'none';
+      document.getElementById('review-layout').style.display = 'block';
+    }
+
+    // العودة من مربعات المراجعة إلى مربعات الإدخال للتعديل
+    function showEditingLayout() {
+      document.querySelector('.form-column').style.display = 'block';
+      document.querySelector('.output-column').style.display = 'flex';
+      document.getElementById('output_section').style.display = 'none';
+      document.getElementById('output_placeholder').style.display = 'none';
+    }
+
+    var reviewEditMode = false;
+    var REVIEW_BOX_IDS = ['review_verdict_num', 'review_verdict_date', 'review_circuit', 'review_court', 'review_crime_num', 'review_waqi', 'review_ijraat', 'review_asbab', 'review_hukm'];
+
+    // تفعيل/إيقاف التعديل المباشر داخل مربعات المراجعة نفسها (بدون الرجوع لمربعات الإدخال)
+    function toggleReviewEdit() {
+      reviewEditMode = !reviewEditMode;
+      REVIEW_BOX_IDS.forEach(function(id) {
+        document.getElementById(id).setAttribute('contenteditable', reviewEditMode ? 'true' : 'false');
+      });
+      document.getElementById('review-edit-btn').innerText = reviewEditMode ? 'تم' : '✏️ تعديل';
+      document.getElementById('review-edit-hint').style.display = reviewEditMode ? 'block' : 'none';
+      if (reviewEditMode) {
+        document.getElementById('review_verdict_num').focus();
+      }
+    }
+
+    // إعادة بناء نص الدراسة الكامل من محتوى مربعات المراجعة الحالي (بما فيه أي تعديل يدوي مباشر) ونسخه
+    function copyReviewText() {
+      var verdictNum = document.getElementById('review_verdict_num').innerText.trim();
+      var verdictDate = document.getElementById('review_verdict_date').innerText.trim();
+      var circuit = document.getElementById('review_circuit').innerText.trim();
+      var court = document.getElementById('review_court').innerText.trim();
+      var crimeNum = document.getElementById('review_crime_num').innerText.trim();
+      var waqi = document.getElementById('review_waqi').innerText;
+      var ijraat = document.getElementById('review_ijraat').innerText;
+      var asbab = document.getElementById('review_asbab').innerText;
+      var hukm = document.getElementById('review_hukm').innerText;
+
+      var fullText = "وبما أن وقائع هذه القضية قد أوردها الحكم المستأنف رقم " + verdictNum + " بتاريخ " + verdictDate + "هـ الصادر من الدائرة " + circuit + " بالمحكمة الجزائية بـ" + court + "، فإن الدائرة تحيل إليه منعاً للتكرار، وتتلخص دعوى المدعي العام ذات الرقم الجنائي (" + crimeNum + ") بـ (" + waqi + " " + ijraat + "\n\n" + asbab + "\n\n" + hukm;
+
+      function fallbackCopy() {
+        var ta = document.createElement('textarea');
+        ta.value = fullText;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        try {
+          var ok = document.execCommand('copy');
+          showNotification(ok ? "تم نسخ الدراسة" : "⚠️ حدث خطأ أثناء عملية النسخ.");
+        } catch (err) {
+          showNotification("⚠️ حدث خطأ أثناء عملية النسخ.");
+        }
+        document.body.removeChild(ta);
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullText).then(function() {
+          showNotification("تم نسخ الدراسة");
+        }).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+    }
+
+    // تحديث مربع النص وإظهار الخطوة التالية تلقائياً عند الكتابة/التغيير في أي حقل من حقول النموذج
+    document.addEventListener('input', function(e) {
+      if (!e.target.closest('.form-column')) return;
+      updateStepsVisibility();
+      liveUpdateOutput();
+    });
+    document.addEventListener('change', function(e) {
+      if (!e.target.closest('.form-column')) return;
+      updateStepsVisibility();
+      liveUpdateOutput();
+    });
+
+    // تهيئة أولية: تفعيل وضع الإدخال اليدوي مباشرة (لا يوجد خيار لصق الصك في هذا النموذج)
+    selectFillMode('paste');
+    toggleActionType();
+  </script>
+</body>
+</html>
