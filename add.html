@@ -187,6 +187,7 @@
     for (var i = 0; i < all.length; i++) all[i].classList.remove('on');
     btn.classList.add('on');
     circuit = btn.getAttribute('data-c');
+    try { localStorage.setItem(CIRC_KEY, circuit); } catch (e) {}
   }
 
   function msg(t, cls) {
@@ -229,6 +230,7 @@
       .then(function (out) {
         btn.disabled = false;
         if (out && out.ok) {
+          try { localStorage.setItem(CIRC_KEY, circuit); } catch (e) {}
           msg('أُضيفت القضية ' + caseNo + ' — ' + circuit.replace('الدائرة ', ''), 'ok');
           clearForm();
         } else {
@@ -246,6 +248,9 @@
     document.getElementById('action').value = '';
     document.getElementById('date').value = '';
     document.getElementById('note').value = '';
+    document.getElementById('ocr-out').innerHTML = '';
+    document.getElementById('ocr_paste').value = '';
+    ocrMsg('');
     document.getElementById('caseNo').focus();
   }
 
@@ -274,7 +279,71 @@
     return tjsLoading;
   }
 
+  var shotCanvas = null;
+  var CIRC_KEY = 'add_last_circuit_v1';
+
   function ocrMsg(t) { document.getElementById('ocr-msg').innerText = t || ''; }
+
+  // اختيار الدائرة من أزرارها بالاسم
+  function setCircuit(name, why) {
+    var all = document.querySelectorAll('.circuits button');
+    var hit = null;
+    for (var i = 0; i < all.length; i++) {
+      all[i].classList.remove('on');
+      if (all[i].getAttribute('data-c') === name) hit = all[i];
+    }
+    if (!hit) { circuit = ''; return false; }
+    hit.classList.add('on');
+    circuit = name;
+    if (why) ocrMsg(why);
+    return true;
+  }
+
+  // تبسيط الحروف حتى لا تمنع الهمزات والتاء المربوطة المطابقة
+  function arNorm(s) {
+    return String(s || '')
+      .replace(/[ً-ْـ]/g, '')
+      .replace(/[أإآا]/g, 'ا')
+      .replace(/ى/g, 'ي')
+      .replace(/ة/g, 'ه')
+      .replace(/\s+/g, '');
+  }
+
+  var CIRCUIT_WORDS = [
+    { w: 'الاولي', c: 'الدائرة الأولى' },
+    { w: 'الثانيه', c: 'الدائرة الثانية' },
+    { w: 'الثالثه', c: 'الدائرة الثالثة' },
+    { w: 'الرابعه', c: 'الدائرة الرابعة' },
+    { w: 'الخامسه', c: 'الدائرة الخامسة' },
+    { w: 'السادسه', c: 'الدائرة السادسة' }
+  ];
+
+  function circuitFromText(text) {
+    var t = arNorm(text);
+    var hits = CIRCUIT_WORDS.filter(function (x) { return t.indexOf(x.w) !== -1; });
+    return hits.length === 1 ? hits[0].c : '';   // إن تعددت فلا يُخمَّن
+  }
+
+  // قراءة عربية ثانية للصورة، لتبيّن اسم الدائرة وحده
+  function readCircuit(cv) {
+    if (!cv || !window.Tesseract) return;
+    return window.Tesseract.recognize(cv, 'ara', {
+      logger: function (m) {
+        if (m.status === 'recognizing text') ocrMsg('يجري تبيّن الدائرة… ' + Math.round((m.progress || 0) * 100) + '٪');
+      }
+    }).then(function (r) {
+      var name = circuitFromText((r && r.data && r.data.text) || '');
+      if (name) { setCircuit(name, 'جاهز: ' + name + ' (من الصورة) — اضغط «إضافة».'); return; }
+      useLastCircuit('لم تتبيّن الدائرة من الصورة');
+    }).catch(function () { useLastCircuit('تعذّرت قراءة اسم الدائرة'); });
+  }
+
+  function useLastCircuit(why) {
+    var last = '';
+    try { last = localStorage.getItem(CIRC_KEY) || ''; } catch (e) {}
+    if (last && setCircuit(last)) ocrMsg(why + ' — اخترتُ ' + last + ' (آخر ما اخترته). غيّرها إن لزم ثم اضغط «إضافة».');
+    else ocrMsg(why + '. اختر الدائرة ثم اضغط «إضافة».');
+  }
 
   function togglePasteBox() {
     var b = document.getElementById('paste-box');
@@ -324,6 +393,7 @@
 
     prepImage(file)
       .then(function (cv) {
+        shotCanvas = cv;
         ocrMsg('يجري تحميل محرّك القراءة…');
         return loadTesseract().then(function () {
           ocrMsg('يجري قراءة الصورة…');
@@ -338,8 +408,10 @@
       })
       .then(function (res) {
         btn.disabled = false;
-        var n = scanText((res && res.data && res.data.text) || '');
-        ocrMsg(n ? 'اضغط الرقم الصحيح ليُكتب في الخانة.' : 'لم يُعثر على رقم قضية في الصورة. جرّب صورة أوضح أو «لصق نص».');
+        var n = scanText((res && res.data && res.data.text) || '', true);
+        if (!n) { ocrMsg('لم يُعثر على رقم قضية في الصورة. جرّب صورة أوضح أو «لصق نص».'); return; }
+        ocrMsg('كُتب رقم القضية. يجري تبيّن الدائرة…');
+        return readCircuit(shotCanvas);
       })
       .catch(function () {
         btn.disabled = false;
@@ -348,7 +420,7 @@
   }
 
   // يستخرج أرقام القضايا (7–12 رقماً) والتواريخ الهجرية من أي نص
-  function scanText(text) {
+  function scanText(text, autofill) {
     var t = toWestern(text || '');
     var nums = [], dates = [];
     var DATE_RE = /\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*14\d\d/g;
@@ -377,6 +449,9 @@
       dates.map(function (v) {
         return '<button type="button" class="d" onclick="useDate(\'' + v + '\')"><span class="lbl">تاريخ</span>' + v + '</button>';
       }).join('');
+
+    // الرقم الأرجح يُكتب في خانته مباشرة، والبقية وسوم تضغطها إن أخطأ
+    if (autofill && nums.length) document.getElementById('caseNo').value = nums[0];
     return nums.length;
   }
 
