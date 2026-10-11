@@ -174,7 +174,7 @@
     <div id="msg"></div>
   </div>
 
-  <div class="foot">تاريخ النسخة: <span id="ver">2026-10-11 الساعة 14:35</span></div>
+  <div class="foot">تاريخ النسخة: <span id="ver">2026-10-11 الساعة 16:40</span></div>
 
 </div>
 
@@ -378,12 +378,9 @@
   // قراءة عربية ثانية للصورة، لتبيّن اسم الدائرة وحده
   function readCircuit(cv) {
     if (!cv || !window.Tesseract) return;
-    return window.Tesseract.recognize(cv, 'ara', {
-      logger: function (m) {
-        if (m.status === 'recognizing text') ocrMsg('يجري تبيّن الدائرة… ' + Math.round((m.progress || 0) * 100) + '٪');
-      }
-    }).then(function (r) {
-      var name = circuitFromText((r && r.data && r.data.text) || '');
+    return runOcr(cv, 'ara', { tessedit_char_whitelist: '', tessedit_pageseg_mode: '3' }, 'يجري تبيّن الدائرة… ')
+      .then(function (text) {
+      var name = circuitFromText(text || '');
       if (name) { setCircuit(name, 'جاهز: ' + name + ' (من الصورة) — اضغط «إضافة».'); return; }
       useLastCircuit('لم تتبيّن الدائرة من الصورة');
     }).catch(function () { useLastCircuit('تعذّرت قراءة اسم الدائرة'); });
@@ -437,15 +434,43 @@
     });
   }
 
-  function digitsPass(cv, psm, label) {
-    return window.Tesseract.recognize(cv, 'eng', {
-      logger: function (m) {
-        if (m.status === 'recognizing text') ocrMsg(label + Math.round((m.progress || 0) * 100) + '٪');
-      },
-      tessedit_char_whitelist: '0123456789/',
-      tessedit_pageseg_mode: psm
+  /* المحرّك يُنشأ عاملاً مستقلاً لكل لغة ويبقى محفوظاً،
+     لأن الإعدادات (الأرقام وحدها، وطريقة القراءة) لا تُقبل إلا بهذه الطريقة */
+  var workers = {}, progressLabel = '';
+
+  function getWorker(lang) {
+    if (workers[lang]) return workers[lang];
+    workers[lang] = loadTesseract().then(function () {
+      if (!window.Tesseract.createWorker) return null;      // نسخة قديمة: يُكتفى بالطريقة المباشرة
+      return window.Tesseract.createWorker(lang, 1, {
+        logger: function (m) {
+          if (m && m.status === 'recognizing text') ocrMsg(progressLabel + Math.round((m.progress || 0) * 100) + '٪');
+        }
+      });
+    }).catch(function () { return null; });
+    return workers[lang];
+  }
+
+  function runOcr(cv, lang, params, label) {
+    progressLabel = label || '';
+    return getWorker(lang).then(function (w) {
+      if (!w) {                                             // احتياط: الطريقة المباشرة
+        var o = { logger: function (m) {
+          if (m && m.status === 'recognizing text') ocrMsg((label || '') + Math.round((m.progress || 0) * 100) + '٪');
+        } };
+        for (var k in params) o[k] = params[k];
+        return window.Tesseract.recognize(cv, lang, o);
+      }
+      return w.setParameters(params).then(function () { return w.recognize(cv); });
     }).then(function (r) { return (r && r.data && r.data.text) || ''; })
       .catch(function () { return ''; });
+  }
+
+  function digitsPass(cv, psm, label) {
+    return runOcr(cv, 'eng', {
+      tessedit_char_whitelist: '0123456789/',
+      tessedit_pageseg_mode: psm
+    }, label);
   }
 
   function readShot(input) {
@@ -457,25 +482,25 @@
     document.getElementById('ocr-out').innerHTML = '';
     ocrMsg('يجري تجهيز الصورة…');
 
-    var small = null;
-    prepImage(file)
+    // ثلاث قراءات بثلاثة أحجام: ما أخطأت فيه قراءة تصححه الأخريان بالأغلبية
+    var sizes = [2600, 2100, 1700], texts = [];
+    prepImage(file, sizes[0])
       .then(function (cv) {
         shotCanvas = cv;
-        return prepImage(file, 1700).then(function (cv2) { small = cv2; return cv; });
-      })
-      .then(function (cv) {
         ocrMsg('يجري تحميل محرّك القراءة…');
-        return loadTesseract().then(function () {
-          // ثلاث قراءات: بحجمين وطريقتين، فما سقط من واحدة تلتقطه الأخرى
-          ocrMsg('يجري قراءة الصورة…');
-          return digitsPass(cv, '11', 'يجري قراءة الصورة… ').then(function (a) {
-            return digitsPass(cv, '6', 'مراجعة القراءة… ').then(function (b) {
-              return digitsPass(small, '11', 'مراجعة أخيرة… ').then(function (c) {
-                return a + '\n' + b + '\n' + c;
-              });
-            });
-          });
-        });
+        return loadTesseract();
+      })
+      .then(function () {
+        var labels = ['يجري قراءة الصورة… ', 'مراجعة القراءة… ', 'مراجعة أخيرة… '];
+        var i = 0;
+        function next() {
+          if (i >= sizes.length) return Promise.resolve(texts.join('\n'));
+          var k = i++;
+          var p = k === 0 ? Promise.resolve(shotCanvas) : prepImage(file, sizes[k]);
+          return p.then(function (cv) { return digitsPass(cv, '11', labels[k]); })
+                  .then(function (t) { texts.push(t); return next(); });
+        }
+        return next();
       })
       .then(function (text) {
         btn.disabled = false;
@@ -542,6 +567,21 @@
 
     // التام يُحدَّد وحده، والناقص يبقى معروضاً بلا تحديد مع تنبيه
     found = cands.map(function (x) { return { n: x.n, on: !x.bad }; });
+
+    /* القراءات الثلاث قد تختلف في خانة واحدة من الرقم نفسه،
+       فالأرجح (الأكثر تكراراً) يبقى محدَّداً والشبيه به يُعرض بلا تحديد ليختاره إن شاء */
+    function near(a, b) {
+      if (a.length !== b.length) return false;
+      var diff = 0;
+      for (var i = 0; i < a.length; i++) if (a.charAt(i) !== b.charAt(i) && ++diff > 1) return false;
+      return diff === 1;
+    }
+    for (var p = 0; p < found.length; p++) {
+      if (!found[p].on) continue;
+      for (var q = p + 1; q < found.length; q++) {
+        if (found[q].on && near(found[p].n, found[q].n)) found[q].on = false;
+      }
+    }
     if (!found.some(function (x) { return x.on; }) && found.length) found[0].on = true;
     foundDates = dates;
     renderFound(autofill);
