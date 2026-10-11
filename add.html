@@ -87,11 +87,15 @@
     border: none; border-radius: 9px; padding: 11px 16px; cursor: pointer;
   }
   #multi-bar .m-note { font-size: 14px; color: #78909c; }
+  .raw-link { background: none; border: none; color: #90a4ae; font-family: inherit; font-size: 14px; padding: 2px 0 10px; cursor: pointer; }
+  #raw-box { direction: ltr; text-align: left; background: #fafafa; border: 1px solid #eceff1; border-radius: 8px; padding: 8px; font-size: 13px; color: #607d8b; max-height: 200px; overflow: auto; white-space: pre-wrap; margin: 0 0 12px; }
 
   #setup { display: none; }
   #setup.on { display: block; }
   #setup input { font-size: 14px; }
   .hint { font-size: 14px; color: #90a4ae; line-height: 1.9; margin: 8px 0 0; }
+
+  .foot { padding-top: 24px; text-align: center; font-size: 11px; color: #90a4ae; }
 </style>
 </head>
 <body>
@@ -127,6 +131,7 @@
     <div id="ocr-msg"></div>
     <div id="ocr-out"></div>
     <div id="multi-bar"></div>
+    <div id="raw-wrap"></div>
 
     <div class="field">
       <label>الدائرة</label>
@@ -168,6 +173,8 @@
     <button type="button" class="send" id="sendBtn" onclick="send()">إضافة</button>
     <div id="msg"></div>
   </div>
+
+  <div class="foot">تاريخ النسخة: <span id="ver">2026-10-11 الساعة 14:35</span></div>
 
 </div>
 
@@ -265,6 +272,8 @@
     document.getElementById('multi-bar').className = '';
     document.getElementById('multi-bar').innerHTML = '';
     document.getElementById('ocr_paste').value = '';
+    rawText = '';
+    document.getElementById('raw-wrap').innerHTML = '';
     ocrMsg(''); ocrWarn('');
     document.getElementById('caseNo').focus();
   }
@@ -297,6 +306,25 @@
   var shotCanvas = null;
   var found = [], foundDates = [];
   var CIRC_KEY = 'add_last_circuit_v1';
+
+  var rawText = '';
+
+  // النص الخام كما قرأه المحرّك، يُعرض عند الحاجة لتبيّن سبب خطأ القراءة
+  function showRawLink() {
+    var el = document.getElementById('raw-wrap');
+    el.innerHTML = rawText
+      ? '<button type="button" class="raw-link" onclick="toggleRaw()">النص الذي قرأه المحرّك ⌄</button>' +
+        '<pre id="raw-box" style="display:none;"></pre>'
+      : '';
+  }
+
+  function toggleRaw() {
+    var box = document.getElementById('raw-box');
+    if (!box) return;
+    var on = box.style.display === 'none';
+    box.style.display = on ? 'block' : 'none';
+    box.innerText = rawText.replace(/\n{2,}/g, '\n').trim();
+  }
 
   var baseMsg = '', warnMsg = '';
   function paintMsg() {
@@ -375,14 +403,14 @@
   }
 
   // تصغير الصورة وتحويلها رمادية مع شدّ التباين، وقلبها إن كانت خلفيتها داكنة
-  function prepImage(file) {
+  function prepImage(file, target) {
     return new Promise(function (ok, bad) {
       var img = new Image();
       img.onload = function () {
+        target = target || 2600;
         // الصورة تُكبَّر إن كانت صغيرة، فالأرقام الدقيقة تُقرأ أصحّ، وتُصغَّر إن تجاوزت الحد
         // الطول الأكبر يُضبط على نحو ٢٦٠٠ نقطة: تكبيراً للصغيرة وتصغيراً للكبيرة،
         // فالأرقام تُقرأ أصحّ عند هذا الحجم
-        var target = 2600;
         var big = Math.max(img.width, img.height) || 1;
         var sc = Math.min(3, target / big);
         var w = Math.max(1, Math.round(img.width * sc)), h = Math.max(1, Math.round(img.height * sc));
@@ -429,21 +457,30 @@
     document.getElementById('ocr-out').innerHTML = '';
     ocrMsg('يجري تجهيز الصورة…');
 
+    var small = null;
     prepImage(file)
       .then(function (cv) {
         shotCanvas = cv;
+        return prepImage(file, 1700).then(function (cv2) { small = cv2; return cv; });
+      })
+      .then(function (cv) {
         ocrMsg('يجري تحميل محرّك القراءة…');
         return loadTesseract().then(function () {
-          // قراءتان بطريقتين مختلفتين، فما سقط من إحداهما تلتقطه الأخرى
+          // ثلاث قراءات: بحجمين وطريقتين، فما سقط من واحدة تلتقطه الأخرى
           ocrMsg('يجري قراءة الصورة…');
-          return digitsPass(cv, '11', 'يجري قراءة الصورة… ')
-            .then(function (a) {
-              return digitsPass(cv, '6', 'مراجعة القراءة… ').then(function (b) { return a + '\n' + b; });
+          return digitsPass(cv, '11', 'يجري قراءة الصورة… ').then(function (a) {
+            return digitsPass(cv, '6', 'مراجعة القراءة… ').then(function (b) {
+              return digitsPass(small, '11', 'مراجعة أخيرة… ').then(function (c) {
+                return a + '\n' + b + '\n' + c;
+              });
             });
+          });
         });
       })
       .then(function (text) {
         btn.disabled = false;
+        rawText = text || '';
+        showRawLink();
         var n = scanText(text || '', true);
         if (!n) { ocrMsg('لم يُعثر على رقم قضية في الصورة. جرّب صورة أوضح أو «لصق نص».'); return; }
         ocrMsg('يجري تبيّن الدائرة…');
@@ -489,9 +526,11 @@
       var L = line.replace(DATE_RE, ' ');
       var runs = L.match(/\d{7,}/g);
       if (runs) runs.forEach(run);
-      else {
-        var bare = L.replace(/[^\d]/g, '');     // رقم فُرّقت خاناته بمسافات في سطر واحد
-        if (bare.length >= 7) run(bare);
+      else if (L.indexOf('/') === -1) {
+        // رقم فُرّقت خاناته بمسافات في سطر واحد: لا يُقبل إلا إن خرج عشر خانات تبدأ بـ4،
+        // لئلا تتجمّع أرقام متناثرة فتصير رقماً وهمياً
+        var bare = L.replace(/[^\d]/g, '');
+        if (bare.length === 10 && bare.charAt(0) === '4') run(bare);
       }
     });
 
@@ -588,6 +627,7 @@
 
   window.togglePasteBox = togglePasteBox;
   window.toggleFound = toggleFound;
+  window.toggleRaw = toggleRaw;
   window.addAll = addAll;
   window.readShot = readShot;
   window.scanText = scanText;
