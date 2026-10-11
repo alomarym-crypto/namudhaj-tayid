@@ -56,6 +56,27 @@
   #msg.ok { color: #2e7d32; }
   #msg.bad { color: #c62828; }
 
+  /* القراءة من صورة */
+  .pick-row { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 14px; }
+  .pick-row button {
+    font-family: inherit; font-size: 16px; font-weight: 700; color: #283593;
+    background: #e8eaf6; border: 1px solid #c5cae9; border-radius: 9px; padding: 10px 14px; cursor: pointer;
+  }
+  .pick-row button:disabled { opacity: .55; }
+  #shot { display: none; }
+  #paste-box { display: none; margin-bottom: 14px; }
+  #paste-box.on { display: block; }
+  #paste-box textarea { min-height: 90px; font-size: 16px; }
+  #ocr-msg { font-size: 15px; color: #607d8b; margin-bottom: 8px; min-height: 0; }
+  #ocr-out { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  #ocr-out button {
+    font-family: inherit; font-size: 17px; font-weight: 700; direction: ltr;
+    background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; border-radius: 14px; padding: 7px 13px; cursor: pointer;
+  }
+  #ocr-out button.d { background: #e1f5fe; color: #01579b; border-color: #81d4fa; direction: rtl; }
+  #ocr-out .lbl { font-size: 13px; font-weight: normal; color: #558b2f; margin-right: 5px; }
+  #ocr-out button.d .lbl { color: #0277bd; }
+
   #setup { display: none; }
   #setup.on { display: block; }
   #setup input { font-size: 14px; }
@@ -81,6 +102,19 @@
       <label for="caseNo">رقم القضية</label>
       <input type="text" id="caseNo" inputmode="numeric" autocomplete="off" enterkeyhint="done">
     </div>
+
+    <div class="pick-row">
+      <button type="button" id="shot-btn" onclick="document.getElementById('shot').click()">📷 قراءة من صورة</button>
+      <button type="button" onclick="togglePasteBox()">📋 لصق نص</button>
+      <input type="file" id="shot" accept="image/*" onchange="readShot(this)">
+    </div>
+
+    <div id="paste-box">
+      <textarea id="ocr_paste" rows="3" placeholder="ألصق هنا ما نسخته من الصورة أو من النظام…" oninput="scanText(this.value)"></textarea>
+    </div>
+
+    <div id="ocr-msg"></div>
+    <div id="ocr-out"></div>
 
     <div class="field">
       <label>الدائرة</label>
@@ -214,6 +248,154 @@
     document.getElementById('note').value = '';
     document.getElementById('caseNo').focus();
   }
+
+  /* ===== قراءة الأرقام من صورة =====
+     القراءة تجري في الجهاز نفسه بلا خادم. محرّك القراءة يُنزَّل أول مرة فقط ثم يُخزَّن. */
+  var TJS = [
+    'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
+    'https://unpkg.com/tesseract.js@5.1.1/dist/tesseract.min.js'
+  ];
+  var tjsLoading = null;
+
+  function loadTesseract() {
+    if (window.Tesseract) return Promise.resolve();
+    if (tjsLoading) return tjsLoading;
+    tjsLoading = new Promise(function (ok, bad) {
+      var i = 0;
+      (function next() {
+        if (i >= TJS.length) { bad(new Error('no engine')); return; }
+        var s = document.createElement('script');
+        s.src = TJS[i++];
+        s.onload = function () { ok(); };
+        s.onerror = function () { next(); };
+        document.head.appendChild(s);
+      })();
+    });
+    return tjsLoading;
+  }
+
+  function ocrMsg(t) { document.getElementById('ocr-msg').innerText = t || ''; }
+
+  function togglePasteBox() {
+    var b = document.getElementById('paste-box');
+    b.classList.toggle('on');
+    if (b.classList.contains('on')) document.getElementById('ocr_paste').focus();
+  }
+
+  // تصغير الصورة وتحويلها رمادية مع شدّ التباين، وقلبها إن كانت خلفيتها داكنة
+  function prepImage(file) {
+    return new Promise(function (ok, bad) {
+      var img = new Image();
+      img.onload = function () {
+        var max = 1600;
+        var sc = Math.min(1, max / Math.max(img.width, img.height));
+        var w = Math.max(1, Math.round(img.width * sc)), h = Math.max(1, Math.round(img.height * sc));
+        var cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        var cx = cv.getContext('2d');
+        cx.drawImage(img, 0, 0, w, h);
+        var d = cx.getImageData(0, 0, w, h), a = d.data, sum = 0;
+        for (var i = 0; i < a.length; i += 4) {
+          var g = (a[i] * 0.299 + a[i + 1] * 0.587 + a[i + 2] * 0.114) | 0;
+          a[i] = a[i + 1] = a[i + 2] = g;
+          sum += g;
+        }
+        var mean = sum / (a.length / 4);
+        if (mean < 120) for (var j = 0; j < a.length; j += 4) {   // خلفية داكنة: تُقلب
+          a[j] = a[j + 1] = a[j + 2] = 255 - a[j];
+        }
+        cx.putImageData(d, 0, 0);
+        URL.revokeObjectURL(img.src);
+        ok(cv);
+      };
+      img.onerror = function () { bad(new Error('bad image')); };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  function readShot(input) {
+    var file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    var btn = document.getElementById('shot-btn');
+    btn.disabled = true;
+    document.getElementById('ocr-out').innerHTML = '';
+    ocrMsg('يجري تجهيز الصورة…');
+
+    prepImage(file)
+      .then(function (cv) {
+        ocrMsg('يجري تحميل محرّك القراءة…');
+        return loadTesseract().then(function () {
+          ocrMsg('يجري قراءة الصورة…');
+          return window.Tesseract.recognize(cv, 'eng', {
+            logger: function (m) {
+              if (m.status === 'recognizing text') ocrMsg('يجري قراءة الصورة… ' + Math.round((m.progress || 0) * 100) + '٪');
+            },
+            tessedit_char_whitelist: '0123456789/',
+            tessedit_pageseg_mode: '11'
+          });
+        });
+      })
+      .then(function (res) {
+        btn.disabled = false;
+        var n = scanText((res && res.data && res.data.text) || '');
+        ocrMsg(n ? 'اضغط الرقم الصحيح ليُكتب في الخانة.' : 'لم يُعثر على رقم قضية في الصورة. جرّب صورة أوضح أو «لصق نص».');
+      })
+      .catch(function () {
+        btn.disabled = false;
+        ocrMsg('تعذّرت القراءة. تأكد من الإنترنت أول مرة، أو استعمل «لصق نص».');
+      });
+  }
+
+  // يستخرج أرقام القضايا (7–12 رقماً) والتواريخ الهجرية من أي نص
+  function scanText(text) {
+    var t = toWestern(text || '');
+    var nums = [], dates = [];
+    var DATE_RE = /\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*14\d\d/g;
+    (t.match(DATE_RE) || []).forEach(function (x) {
+      var v = x.replace(/\s+/g, '');
+      if (dates.indexOf(v) === -1) dates.push(v);
+    });
+
+    // سطراً سطراً، حتى لا تلتصق أرقام سطرين فيصيرا رقماً واحداً
+    function add(v) { if (v.length >= 7 && v.length <= 12 && nums.indexOf(v) === -1) nums.push(v); }
+    t.split(/\r?\n/).forEach(function (line) {
+      var L = line.replace(DATE_RE, ' ');
+      (L.match(/\d{7,12}/g) || []).forEach(add);
+      var bare = L.replace(/[^\d]/g, '');            // رقم فُرّقت أجزاؤه بمسافات في سطر واحد
+      if (bare && !/\d{7,12}/.test(L)) add(bare);
+    });
+
+    // أرقام القضايا عشرة أرقام غالباً، فتُقدَّم على ما سواها
+    nums.sort(function (a, b) { return (a.length === 10 ? 0 : 1) - (b.length === 10 ? 0 : 1); });
+
+    var out = document.getElementById('ocr-out');
+    out.innerHTML =
+      nums.map(function (v) {
+        return '<button type="button" onclick="useNum(\'' + v + '\')"><span class="lbl">قضية</span>' + v + '</button>';
+      }).join('') +
+      dates.map(function (v) {
+        return '<button type="button" class="d" onclick="useDate(\'' + v + '\')"><span class="lbl">تاريخ</span>' + v + '</button>';
+      }).join('');
+    return nums.length;
+  }
+
+  function useNum(v) {
+    document.getElementById('caseNo').value = v;
+    msg('رقم القضية: ' + v, 'ok');
+  }
+
+  function useDate(v) {
+    document.getElementById('extra').classList.add('on');
+    document.getElementById('date').value = v;
+    msg('تاريخ الجلسة: ' + v, 'ok');
+  }
+
+  window.togglePasteBox = togglePasteBox;
+  window.readShot = readShot;
+  window.scanText = scanText;
+  window.useNum = useNum;
+  window.useDate = useDate;
 
   window.toggleSetup = toggleSetup;
   window.toggleExtra = toggleExtra;
