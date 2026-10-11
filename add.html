@@ -265,7 +265,7 @@
     document.getElementById('multi-bar').className = '';
     document.getElementById('multi-bar').innerHTML = '';
     document.getElementById('ocr_paste').value = '';
-    ocrMsg('');
+    ocrMsg(''); ocrWarn('');
     document.getElementById('caseNo').focus();
   }
 
@@ -298,7 +298,14 @@
   var found = [], foundDates = [];
   var CIRC_KEY = 'add_last_circuit_v1';
 
-  function ocrMsg(t) { document.getElementById('ocr-msg').innerText = t || ''; }
+  var baseMsg = '', warnMsg = '';
+  function paintMsg() {
+    document.getElementById('ocr-msg').innerHTML =
+      (baseMsg ? '<div>' + baseMsg.replace(/</g, '&lt;') + '</div>' : '') +
+      (warnMsg ? '<div style="color:#8d4b00;">' + warnMsg.replace(/</g, '&lt;') + '</div>' : '');
+  }
+  function ocrMsg(t) { baseMsg = t || ''; paintMsg(); }
+  function ocrWarn(t) { warnMsg = t || ''; paintMsg(); }
 
   // اختيار الدائرة من أزرارها بالاسم
   function setCircuit(name, why) {
@@ -373,9 +380,11 @@
       var img = new Image();
       img.onload = function () {
         // الصورة تُكبَّر إن كانت صغيرة، فالأرقام الدقيقة تُقرأ أصحّ، وتُصغَّر إن تجاوزت الحد
-        var max = 2400, min = 1500;
-        var big = Math.max(img.width, img.height);
-        var sc = big < min ? Math.min(2, min / big) : Math.min(1, max / big);
+        // الطول الأكبر يُضبط على نحو ٢٦٠٠ نقطة: تكبيراً للصغيرة وتصغيراً للكبيرة،
+        // فالأرقام تُقرأ أصحّ عند هذا الحجم
+        var target = 2600;
+        var big = Math.max(img.width, img.height) || 1;
+        var sc = Math.min(3, target / big);
         var w = Math.max(1, Math.round(img.width * sc)), h = Math.max(1, Math.round(img.height * sc));
         var cv = document.createElement('canvas');
         cv.width = w; cv.height = h;
@@ -456,20 +465,44 @@
       if (dates.indexOf(v) === -1) dates.push(v);
     });
 
-    // سطراً سطراً، حتى لا تلتصق أرقام سطرين فيصيرا رقماً واحداً
-    function add(v) { if (v.length >= 7 && v.length <= 12 && nums.indexOf(v) === -1) nums.push(v); }
+    /* رقم القضية عشر خانات يبدأ بـ4. والقراءة قد تلصق به رقماً مجاوراً،
+       فمن كل سلسلة أرقام تُؤخذ النوافذ العشرية التي تبدأ بـ4، وبذلك يُنتزع الرقم من بين ما علق به. */
+    var map = {}, order = [];
+    function cand(v, bad) {
+      if (!map[v]) { map[v] = { n: v, c: 0, bad: !!bad }; order.push(v); }
+      map[v].c++;
+    }
+    function run(s) {
+      if (s.length === 10) return cand(s);
+      if (s.length > 10) {
+        var got = false;
+        for (var i = 0; i + 10 <= s.length; i++) {
+          var w = s.slice(i, i + 10);
+          if (w.charAt(0) === '4') { cand(w); got = true; }
+        }
+        if (!got) cand(s.slice(0, 10));
+        return;
+      }
+      if (s.length >= 7) cand(s, true);        // ناقص الخانات
+    }
     t.split(/\r?\n/).forEach(function (line) {
       var L = line.replace(DATE_RE, ' ');
-      (L.match(/\d{7,12}/g) || []).forEach(add);
-      var bare = L.replace(/[^\d]/g, '');            // رقم فُرّقت أجزاؤه بمسافات في سطر واحد
-      if (bare && !/\d{7,12}/.test(L)) add(bare);
+      var runs = L.match(/\d{7,}/g);
+      if (runs) runs.forEach(run);
+      else {
+        var bare = L.replace(/[^\d]/g, '');     // رقم فُرّقت خاناته بمسافات في سطر واحد
+        if (bare.length >= 7) run(bare);
+      }
     });
 
-    // أرقام القضايا عشر خانات غالباً، فتُقدَّم على ما سواها
-    nums.sort(function (a, b) { return (a.length === 10 ? 0 : 1) - (b.length === 10 ? 0 : 1); });
+    // التام قبل الناقص، وما تكرر في القراءتين قبل ما ورد مرة
+    var cands = order.map(function (k) { return map[k]; }).sort(function (a, b) {
+      return (a.bad - b.bad) || (b.c - a.c);
+    });
+    nums = cands.map(function (x) { return x.n; });
 
-    // الأرقام التامة (عشر خانات) تُحدَّد وحدها، والناقصة تبقى معروضة بلا تحديد
-    found = nums.map(function (v) { return { n: v, on: v.length === 10 }; });
+    // التام يُحدَّد وحده، والناقص يبقى معروضاً بلا تحديد مع تنبيه
+    found = cands.map(function (x) { return { n: x.n, on: !x.bad }; });
     if (!found.some(function (x) { return x.on; }) && found.length) found[0].on = true;
     foundDates = dates;
     renderFound(autofill);
@@ -499,8 +532,9 @@
     } else { bar.className = ''; bar.innerHTML = ''; }
 
     var bad = on.filter(function (x) { return x.n.length !== 10; });
-    if (bad.length) ocrMsg('تنبيه: ' + bad.map(function (x) { return x.n; }).join('، ') +
-      ' ليست عشر خانات — راجع الرقم أو صحّحه في الخانة.');
+    ocrWarn(bad.length
+      ? '⚠ ' + bad.map(function (x) { return x.n; }).join('، ') + ' ليست عشر خانات — راجعها أو صحّحها في الخانة.'
+      : '');
   }
 
   function toggleFound(i) {
