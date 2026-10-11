@@ -73,9 +73,20 @@
     font-family: inherit; font-size: 17px; font-weight: 700; direction: ltr;
     background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; border-radius: 14px; padding: 7px 13px; cursor: pointer;
   }
+  #ocr-out button.off { background: #f5f5f5; color: #90a4ae; border-color: #e0e0e0; }
+  #ocr-out button.warn { border-color: #ffb74d; }
+  #ocr-out button.warn.on { background: #fff8e1; color: #8d4b00; }
   #ocr-out button.d { background: #e1f5fe; color: #01579b; border-color: #81d4fa; direction: rtl; }
   #ocr-out .lbl { font-size: 13px; font-weight: normal; color: #558b2f; margin-right: 5px; }
+  #ocr-out button.off .lbl { color: #b0bec5; }
   #ocr-out button.d .lbl { color: #0277bd; }
+  #multi-bar { display: none; }
+  #multi-bar.on { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  #multi-bar button {
+    font-family: inherit; font-size: 17px; font-weight: 700; color: #fff; background: #2e7d32;
+    border: none; border-radius: 9px; padding: 11px 16px; cursor: pointer;
+  }
+  #multi-bar .m-note { font-size: 14px; color: #78909c; }
 
   #setup { display: none; }
   #setup.on { display: block; }
@@ -115,6 +126,7 @@
 
     <div id="ocr-msg"></div>
     <div id="ocr-out"></div>
+    <div id="multi-bar"></div>
 
     <div class="field">
       <label>الدائرة</label>
@@ -248,7 +260,10 @@
     document.getElementById('action').value = '';
     document.getElementById('date').value = '';
     document.getElementById('note').value = '';
+    found = []; foundDates = [];
     document.getElementById('ocr-out').innerHTML = '';
+    document.getElementById('multi-bar').className = '';
+    document.getElementById('multi-bar').innerHTML = '';
     document.getElementById('ocr_paste').value = '';
     ocrMsg('');
     document.getElementById('caseNo').focus();
@@ -280,6 +295,7 @@
   }
 
   var shotCanvas = null;
+  var found = [], foundDates = [];
   var CIRC_KEY = 'add_last_circuit_v1';
 
   function ocrMsg(t) { document.getElementById('ocr-msg').innerText = t || ''; }
@@ -356,8 +372,10 @@
     return new Promise(function (ok, bad) {
       var img = new Image();
       img.onload = function () {
-        var max = 1600;
-        var sc = Math.min(1, max / Math.max(img.width, img.height));
+        // الصورة تُكبَّر إن كانت صغيرة، فالأرقام الدقيقة تُقرأ أصحّ، وتُصغَّر إن تجاوزت الحد
+        var max = 2400, min = 1500;
+        var big = Math.max(img.width, img.height);
+        var sc = big < min ? Math.min(2, min / big) : Math.min(1, max / big);
         var w = Math.max(1, Math.round(img.width * sc)), h = Math.max(1, Math.round(img.height * sc));
         var cv = document.createElement('canvas');
         cv.width = w; cv.height = h;
@@ -382,6 +400,17 @@
     });
   }
 
+  function digitsPass(cv, psm, label) {
+    return window.Tesseract.recognize(cv, 'eng', {
+      logger: function (m) {
+        if (m.status === 'recognizing text') ocrMsg(label + Math.round((m.progress || 0) * 100) + '٪');
+      },
+      tessedit_char_whitelist: '0123456789/',
+      tessedit_pageseg_mode: psm
+    }).then(function (r) { return (r && r.data && r.data.text) || ''; })
+      .catch(function () { return ''; });
+  }
+
   function readShot(input) {
     var file = input.files && input.files[0];
     input.value = '';
@@ -396,21 +425,19 @@
         shotCanvas = cv;
         ocrMsg('يجري تحميل محرّك القراءة…');
         return loadTesseract().then(function () {
+          // قراءتان بطريقتين مختلفتين، فما سقط من إحداهما تلتقطه الأخرى
           ocrMsg('يجري قراءة الصورة…');
-          return window.Tesseract.recognize(cv, 'eng', {
-            logger: function (m) {
-              if (m.status === 'recognizing text') ocrMsg('يجري قراءة الصورة… ' + Math.round((m.progress || 0) * 100) + '٪');
-            },
-            tessedit_char_whitelist: '0123456789/',
-            tessedit_pageseg_mode: '11'
-          });
+          return digitsPass(cv, '11', 'يجري قراءة الصورة… ')
+            .then(function (a) {
+              return digitsPass(cv, '6', 'مراجعة القراءة… ').then(function (b) { return a + '\n' + b; });
+            });
         });
       })
-      .then(function (res) {
+      .then(function (text) {
         btn.disabled = false;
-        var n = scanText((res && res.data && res.data.text) || '', true);
+        var n = scanText(text || '', true);
         if (!n) { ocrMsg('لم يُعثر على رقم قضية في الصورة. جرّب صورة أوضح أو «لصق نص».'); return; }
-        ocrMsg('كُتب رقم القضية. يجري تبيّن الدائرة…');
+        ocrMsg('يجري تبيّن الدائرة…');
         return readCircuit(shotCanvas);
       })
       .catch(function () {
@@ -438,21 +465,80 @@
       if (bare && !/\d{7,12}/.test(L)) add(bare);
     });
 
-    // أرقام القضايا عشرة أرقام غالباً، فتُقدَّم على ما سواها
+    // أرقام القضايا عشر خانات غالباً، فتُقدَّم على ما سواها
     nums.sort(function (a, b) { return (a.length === 10 ? 0 : 1) - (b.length === 10 ? 0 : 1); });
 
+    // الأرقام التامة (عشر خانات) تُحدَّد وحدها، والناقصة تبقى معروضة بلا تحديد
+    found = nums.map(function (v) { return { n: v, on: v.length === 10 }; });
+    if (!found.some(function (x) { return x.on; }) && found.length) found[0].on = true;
+    foundDates = dates;
+    renderFound(autofill);
+    return nums.length;
+  }
+
+  function renderFound(autofill) {
     var out = document.getElementById('ocr-out');
     out.innerHTML =
-      nums.map(function (v) {
-        return '<button type="button" onclick="useNum(\'' + v + '\')"><span class="lbl">قضية</span>' + v + '</button>';
+      found.map(function (x, i) {
+        return '<button type="button" class="' + (x.on ? 'on' : 'off') + (x.n.length === 10 ? '' : ' warn') + '"' +
+          ' onclick="toggleFound(' + i + ')" title="' + (x.n.length === 10 ? 'اضغط للتحديد أو إلغائه' : 'عدد خاناته ' + x.n.length + ' — راجعه') + '">' +
+          '<span class="lbl">' + (x.on ? '✓' : '') + ' قضية</span>' + x.n + '</button>';
       }).join('') +
-      dates.map(function (v) {
+      foundDates.map(function (v) {
         return '<button type="button" class="d" onclick="useDate(\'' + v + '\')"><span class="lbl">تاريخ</span>' + v + '</button>';
       }).join('');
 
-    // الرقم الأرجح يُكتب في خانته مباشرة، والبقية وسوم تضغطها إن أخطأ
-    if (autofill && nums.length) document.getElementById('caseNo').value = nums[0];
-    return nums.length;
+    var on = found.filter(function (x) { return x.on; });
+    if (autofill !== false) document.getElementById('caseNo').value = on.length ? on[0].n : '';
+
+    var bar = document.getElementById('multi-bar');
+    if (on.length > 1) {
+      bar.className = 'on';
+      bar.innerHTML = '<button type="button" onclick="addAll()">➕ إضافة المحددة (' + on.length + ')</button>' +
+        '<span class="m-note">تُضاف كلها بالدائرة المختارة</span>';
+    } else { bar.className = ''; bar.innerHTML = ''; }
+
+    var bad = on.filter(function (x) { return x.n.length !== 10; });
+    if (bad.length) ocrMsg('تنبيه: ' + bad.map(function (x) { return x.n; }).join('، ') +
+      ' ليست عشر خانات — راجع الرقم أو صحّحه في الخانة.');
+  }
+
+  function toggleFound(i) {
+    if (!found[i]) return;
+    found[i].on = !found[i].on;
+    renderFound(true);
+  }
+
+  // إضافة كل الأرقام المحددة، واحداً بعد واحد، بالدائرة المختارة
+  function addAll() {
+    var on = found.filter(function (x) { return x.on; }).map(function (x) { return x.n; });
+    if (!on.length) return;
+    if (!url) { document.getElementById('setup').classList.add('on'); msg('الصق رابط السكربت أولاً.', 'bad'); return; }
+    if (!circuit) { msg('اختر الدائرة.', 'bad'); return; }
+    if (!confirm('إضافة ' + on.length + ' قضايا بـ' + circuit + '؟\n' + on.join('\n'))) return;
+
+    var i = 0, okN = 0, badN = [];
+    document.getElementById('sendBtn').disabled = true;
+
+    function step() {
+      if (i >= on.length) {
+        document.getElementById('sendBtn').disabled = false;
+        msg('أُضيفت ' + okN + ' من ' + on.length + (badN.length ? ' — تعذّرت: ' + badN.join('، ') : ''), badN.length ? 'bad' : 'ok');
+        if (!badN.length) clearForm();
+        return;
+      }
+      var n = on[i++];
+      msg('يجري إضافة ' + i + ' من ' + on.length + '…', '');
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'add', caseNo: n, circuit: circuit, proc: val('action'), date: toWestern(val('date')), note: val('note') })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (o) { if (o && o.ok) okN++; else badN.push(n); step(); })
+        .catch(function () { badN.push(n); step(); });
+    }
+    step();
   }
 
   function useNum(v) {
@@ -467,6 +553,8 @@
   }
 
   window.togglePasteBox = togglePasteBox;
+  window.toggleFound = toggleFound;
+  window.addAll = addAll;
   window.readShot = readShot;
   window.scanText = scanText;
   window.useNum = useNum;
