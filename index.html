@@ -30,6 +30,9 @@
   .head p { margin: 0; color: #78909c; font-size: 14px; }
 
   /* الأقسام مربعات: ثلاثة في الصف على الكمبيوتر، واثنان على الجوال */
+  .entry.moving { opacity: .5; }
+  .entry.over { outline: 2px dashed #90a4ae; outline-offset: 2px; }
+
   .entries {
     width: 100%;
     max-width: 820px;
@@ -248,7 +251,10 @@
   .bar .vtab.on { background: #fff; color: #283593; }
 
   @media (max-width: 640px) {
-    .entries { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .entry.moving { opacity: .5; }
+  .entry.over { outline: 2px dashed #90a4ae; outline-offset: 2px; }
+
+  .entries { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .entry { aspect-ratio: auto; min-height: 170px; }
   }
 
@@ -269,73 +275,9 @@
     <p>محكمة الاستئناف بمكة المكرمة — إعداد/ محمد حسن العُمري</p>
   </div>
 
-  <div class="entries">
-    <button class="entry entry-open entry-tayeed" id="card-tayeed" onclick="openForm('tayeed')">
-      <span class="icon">📄</span>
-      <span class="role">للموظفين</span>
-      <span class="name">نموذج التأييد</span>
-      <span class="desc">إعداد دراسة تأييد الحكم تدقيقاً</span>
-    </button>
+  <div class="entries" id="entries"></div>
 
-    <button class="entry entry-locked entry-study" onclick="askCode('study')">
-      <span class="icon">⚖️</span>
-      <span class="role">للقضاة<span class="lock-tag">يتطلب رمز دخول</span></span>
-      <span class="name">نموذج الدراسة القضائية</span>
-      <span class="desc">تدقيقاً ومرافعة ومنقوضة، مع قسم الاستئناف والمحكمة العليا</span>
-    </button>
-
-    <button class="entry entry-open entry-prelim" onclick="openForm('prelim')">
-      <span class="icon">🧭</span>
-      <span class="role">تمهيد</span>
-      <span class="name">الدراسة المبدئية</span>
-      <span class="desc">أسئلة متتابعة تُخرج دراسة مبدئية مرتبة ومسبوكة</span>
-    </button>
-
-    <button class="entry entry-open entry-sessions" onclick="openForm('sessions')">
-      <span class="icon">🗓️</span>
-      <span class="role">جلسات</span>
-      <span class="name">جلساتي اليومية</span>
-      <span class="desc">الصق مواعيد اليوم فتُفرز الجلسات، وحدّد إجراء كل جلسة</span>
-    </button>
-
-    <button class="entry entry-open entry-followup" onclick="openForm('followup')">
-      <span class="icon">📋</span>
-      <span class="role">متابعة</span>
-      <span class="name">متابعة القضايا</span>
-      <span class="desc">القضايا ومواعيدها، والإرسال للمشرف والقضاة عبر واتساب</span>
-    </button>
-
-    <button class="entry entry-open entry-draft" onclick="openForm('draft')">
-      <span class="icon">📝</span>
-      <span class="role">مساحة كتابة</span>
-      <span class="name">المسودة</span>
-      <span class="desc">ثلاث بطاقات للكتابة بعناوين تختارها، تُحفظ تلقائياً</span>
-    </button>
-
-    <button class="entry entry-locked entry-orders" onclick="askCode('orders')">
-      <span class="icon">📑</span>
-      <span class="role">للقضاة<span class="lock-tag">يتطلب رمز دخول</span></span>
-      <span class="name">القرارات والأوامر</span>
-      <span class="desc">أمر القبض، وقرار التبليغ بالمراجعة، والتماس إعادة النظر</span>
-    </button>
-
-    <button class="entry entry-locked entry-reasoning" onclick="askCode('reasoning')">
-      <span class="icon">✍️</span>
-      <span class="role">للقضاة<span class="lock-tag">يتطلب رمز دخول</span></span>
-      <span class="name">تسبيب الأحكام</span>
-      <span class="desc">معالج يولّد مسودة التسبيب بالأسئلة من القوالب النظامية</span>
-    </button>
-
-    <button class="entry entry-open entry-reasons" onclick="openForm('reasons')">
-      <span class="icon">📚</span>
-      <span class="role">مكتبة</span>
-      <span class="name">التسبيبات</span>
-      <span class="desc">تسبيبات محفوظة بعناوينها، تبحث فيها وتدرجها في الحكم</span>
-    </button>
-
-  </div>
-
-  <div class="foot">تاريخ النسخة: 2026-10-13 الساعة 11:55</div>
+  <div class="foot">تاريخ النسخة: 2026-10-13 الساعة 22:02</div>
 </div>
 
 <div id="gate" role="dialog" aria-modal="true">
@@ -410,9 +352,7 @@ var NAV_ORDER = ['tayeed', 'study', 'prelim', 'sessions', 'followup', 'draft', '
 var LOCKED = { study: true, orders: true, reasoning: true };
 
 function renderNav() {
-  var html = NAV_ORDER.filter(function (k) {
-    return k !== 'tayeed' || SHOW_TAYEED || location.hash === '#tayeed';
-  }).map(function (k) {
+  var html = shownOrder().map(function (k) {
     var f = FORMS[k];
     return '<button type="button" class="mini' + (k === currentForm ? ' on' : '') + '" data-k="' + k + '" style="--c:' + f.color + '" ' +
       'onclick="navTo(\'' + k + '\')" title="' + f.title + '"><span class="mi">' + f.icon + '</span><span class="mn">' + f.short + '</span></button>';
@@ -753,10 +693,89 @@ function checkCode() {
   }
 }
 
-if (!SHOW_TAYEED && location.hash !== '#tayeed') {
-  var tc = document.getElementById('card-tayeed');
-  if (tc) tc.style.display = 'none';
+
+/* ===== بطاقات الرئيسية: تُبنى بالكود ليمكن ترتيبها كيفما شئت ===== */
+var CARDS = {
+  tayeed:   { role: 'للموظفين',   desc: 'إعداد دراسة تأييد الحكم تدقيقاً' },
+  study:    { role: 'للقضاة',     desc: 'تدقيقاً ومرافعة ومنقوضة، مع قسم الاستئناف والمحكمة العليا' },
+  prelim:   { role: 'تمهيد',      desc: 'أسئلة متتابعة تُخرج دراسة مبدئية مرتبة ومسبوكة' },
+  sessions: { role: 'جلسات',      desc: 'الصق مواعيد اليوم فتُفرز الجلسات، وحدّد إجراء كل جلسة' },
+  followup: { role: 'متابعة',     desc: 'القضايا ومواعيدها، والإرسال للمشرف والقضاة عبر واتساب' },
+  draft:    { role: 'مساحة كتابة', desc: 'ثلاث بطاقات للكتابة بعناوين تختارها، تُحفظ تلقائياً' },
+  orders:   { role: 'للقضاة',     desc: 'أمر القبض، وقرار التبليغ بالمراجعة، والتماس إعادة النظر' },
+  reasoning:{ role: 'للقضاة',     desc: 'معالج يولّد مسودة التسبيب بالأسئلة من القوالب النظامية' },
+  reasons:  { role: 'مكتبة',      desc: 'تسبيبات محفوظة بعناوينها، تبحث فيها وتدرجها في الحكم' }
+};
+
+var ORDER_KEY = 'portal_order_v1';
+var DEFAULT_ORDER = NAV_ORDER.slice();
+
+function loadOrder() {
+  var saved = [];
+  try { saved = JSON.parse(localStorage.getItem(ORDER_KEY) || '[]'); } catch (e) { saved = []; }
+  if (!Array.isArray(saved)) saved = [];
+  var ok = saved.filter(function (k) { return FORMS[k]; });
+  DEFAULT_ORDER.forEach(function (k) { if (ok.indexOf(k) === -1) ok.push(k); });
+  NAV_ORDER = ok;
 }
+
+function saveOrder() {
+  try { localStorage.setItem(ORDER_KEY, JSON.stringify(NAV_ORDER)); } catch (e) {}
+}
+
+function shownOrder() {
+  return NAV_ORDER.filter(function (k) {
+    return FORMS[k] && (k !== 'tayeed' || SHOW_TAYEED || location.hash === '#tayeed');
+  });
+}
+
+function renderHome() {
+  var box = document.getElementById('entries');
+  if (!box) return;
+  var list = shownOrder();
+  box.innerHTML = list.map(function (k, i) {
+    var f = FORMS[k], c = CARDS[k] || { role: '', desc: '' };
+    var locked = REQUIRE_CODE && LOCKED[k];
+    return '<div class="entry ' + (locked ? 'entry-locked' : 'entry-open') + ' entry-' + k + '" ' +
+      'id="card-' + k + '" draggable="true" data-k="' + k + '" title="اسحبها بالفأرة لتغيير ترتيبها" ' +
+      'onclick="' + (locked ? 'askCode(\'' + k + '\')' : 'openForm(\'' + k + '\')') + '">' +
+      '<span class="icon">' + f.icon + '</span>' +
+      '<span class="role">' + c.role + (locked ? '<span class="lock-tag">يتطلب رمز دخول</span>' : '') + '</span>' +
+      '<span class="name">' + f.title + '</span>' +
+      '<span class="desc">' + c.desc + '</span></div>';
+  }).join('');
+  bindDrag();
+}
+
+
+
+// السحب والإفلات على الحاسب
+var dragKey = null;
+function bindDrag() {
+  Array.prototype.forEach.call(document.querySelectorAll('#entries .entry'), function (el) {
+    el.addEventListener('dragstart', function () { dragKey = el.dataset.k; el.classList.add('moving'); });
+    el.addEventListener('dragend', function () { el.classList.remove('moving'); dragKey = null; });
+    el.addEventListener('dragover', function (e) { e.preventDefault(); if (dragKey && el.dataset.k !== dragKey) el.classList.add('over'); });
+    el.addEventListener('dragleave', function () { el.classList.remove('over'); });
+    el.addEventListener('drop', function (e) {
+      e.preventDefault();
+      el.classList.remove('over');
+      var to = el.dataset.k;
+      if (!dragKey || dragKey === to) return;
+      var from = NAV_ORDER.indexOf(dragKey), target = NAV_ORDER.indexOf(to);
+      NAV_ORDER.splice(from, 1);
+      NAV_ORDER.splice(target, 0, dragKey);
+      saveOrder();
+      renderHome();
+      renderNav();
+    });
+  });
+}
+
+loadOrder();
+renderHome();
+
+
 
 // عند إلغاء الرمز: أخفِ وسم "يتطلب رمز دخول" حتى لا توهم البطاقة بوجود حماية
 if (!REQUIRE_CODE) {
