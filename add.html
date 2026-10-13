@@ -174,7 +174,7 @@
     <div id="msg"></div>
   </div>
 
-  <div class="foot">تاريخ النسخة: <span id="ver">2026-10-11 الساعة 16:40</span></div>
+  <div class="foot">تاريخ النسخة: <span id="ver">2026-10-13 الساعة 12:26</span></div>
 
 </div>
 
@@ -400,7 +400,7 @@
   }
 
   // تصغير الصورة وتحويلها رمادية مع شدّ التباين، وقلبها إن كانت خلفيتها داكنة
-  function prepImage(file, target) {
+  function prepImage(file, target, blur) {
     return new Promise(function (ok, bad) {
       var img = new Image();
       img.onload = function () {
@@ -414,7 +414,10 @@
         var cv = document.createElement('canvas');
         cv.width = w; cv.height = h;
         var cx = cv.getContext('2d');
+        // تنعيم خفيف يمحو شبكة نقاط الشاشة في الصور القريبة، ولولاه لاختلطت الأرقام
+        if (blur) { try { cx.filter = 'blur(' + (blur * sc).toFixed(2) + 'px)'; } catch (e) {} }
         cx.drawImage(img, 0, 0, w, h);
+        try { cx.filter = 'none'; } catch (e) {}
         var d = cx.getImageData(0, 0, w, h), a = d.data, sum = 0;
         for (var i = 0; i < a.length; i += 4) {
           var g = (a[i] * 0.299 + a[i + 1] * 0.587 + a[i + 2] * 0.114) | 0;
@@ -482,9 +485,10 @@
     document.getElementById('ocr-out').innerHTML = '';
     ocrMsg('يجري تجهيز الصورة…');
 
-    // ثلاث قراءات بثلاثة أحجام: ما أخطأت فيه قراءة تصححه الأخريان بالأغلبية
-    var sizes = [2600, 2100, 1700], texts = [];
-    prepImage(file, sizes[0])
+    /* ثلاث قراءات: حجمان بلا تنعيم، وثالثة منعَّمة تُزيل شبكة الشاشة في الصور القريبة.
+       وما اختلفت فيه القراءات يُرجَّح بالأغلبية */
+    var passes = [{ t: 2600, b: 0 }, { t: 2100, b: 0 }, { t: 2100, b: 2 }], texts = [];
+    prepImage(file, passes[0].t)
       .then(function (cv) {
         shotCanvas = cv;
         ocrMsg('يجري تحميل محرّك القراءة…');
@@ -494,9 +498,9 @@
         var labels = ['يجري قراءة الصورة… ', 'مراجعة القراءة… ', 'مراجعة أخيرة… '];
         var i = 0;
         function next() {
-          if (i >= sizes.length) return Promise.resolve(texts.join('\n'));
+          if (i >= passes.length) return Promise.resolve(texts.join('\n'));
           var k = i++;
-          var p = k === 0 ? Promise.resolve(shotCanvas) : prepImage(file, sizes[k]);
+          var p = k === 0 ? Promise.resolve(shotCanvas) : prepImage(file, passes[k].t, passes[k].b);
           return p.then(function (cv) { return digitsPass(cv, '11', labels[k]); })
                   .then(function (t) { texts.push(t); return next(); });
         }
