@@ -55,6 +55,12 @@
   #msg { margin-top: 12px; font-size: 16px; line-height: 1.9; min-height: 24px; }
   #msg.ok { color: #2e7d32; }
   #msg.bad { color: #c62828; }
+  #diag { display: none; margin-top: 10px; padding: 10px 12px; border-radius: 8px;
+          background: #f5f7f8; border: 1px solid #cfd8dc; font-size: 14px; line-height: 1.9;
+          white-space: pre-wrap; word-break: break-word; }
+  #diag.on { display: block; }
+  #diag.ok { background: #e8f5e9; border-color: #a5d6a7; color: #1b5e20; }
+  #diag.bad { background: #ffebee; border-color: #ef9a9a; color: #b71c1c; }
 
   /* القراءة من صورة */
   .pick-row { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 14px; }
@@ -109,7 +115,9 @@
       <input type="text" id="url" placeholder="https://script.google.com/macros/s/..../exec" autocomplete="off">
     </div>
     <button type="button" class="send" onclick="saveUrl()">حفظ</button>
+    <button type="button" class="send" style="background:#546e7a;margin-top:8px" onclick="testUrl()">فحص الاتصال</button>
     <p class="hint">يُحفظ في هذا الجهاز وحده، ولا يُطلب منك مرة أخرى.</p>
+    <div id="diag"></div>
   </div>
 
   <div class="card" id="form">
@@ -174,7 +182,7 @@
     <div id="msg"></div>
   </div>
 
-  <div class="foot">تاريخ النسخة: <span id="ver">2026-10-13 الساعة 12:26</span></div>
+  <div class="foot">تاريخ النسخة: <span id="ver">2026-10-15 الساعة 17:58</span></div>
 
 </div>
 
@@ -199,6 +207,51 @@
     try { localStorage.setItem(URL_KEY, v); } catch (e) {}
     document.getElementById('setup').classList.remove('on');
     msg('حُفظ الرابط.', 'ok');
+  }
+
+  /* فحص الاتصال: يرسل قضية تجريبية ويعرض ردّ السكربت كما هو،
+     فيتبيّن موضع الخلل: الرابط، أو النشر، أو السكربت نفسه. */
+  function diag(t, cls) {
+    var el = document.getElementById('diag');
+    el.className = 'on ' + (cls || '');
+    el.innerText = t;
+  }
+
+  function testUrl() {
+    var u = (document.getElementById('url').value || '').trim();
+    if (!u) { diag('لا يوجد رابط. الصقه أولاً ثم اضغط حفظ.', 'bad'); return; }
+    if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(u)) {
+      diag('شكل الرابط غير صحيح.\nالمطلوب رابط النشر المنتهي بـ /exec، مثل:\nhttps://script.google.com/macros/s/AKfy..../exec\nوإن كان ينتهي بـ /dev فهو رابط التطوير ولا يعمل إلا وأنت داخل حسابك.', 'bad');
+      return;
+    }
+    diag('يجري الفحص…', '');
+    var body = { action: 'add', caseNo: '4000000000', circuit: 'الدائرة الخامسة',
+                 proc: 'فحص اتصال — احذف هذا السطر', date: '', note: 'سطر تجريبي من زر الفحص' };
+    fetch(u, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+               body: JSON.stringify(body) })
+      .then(function (r) {
+        return r.text().then(function (t) { return { s: r.status, t: t }; });
+      })
+      .then(function (o) {
+        var head = 'حالة الرد: ' + o.s + '\n';
+        var txt = (o.t || '').slice(0, 400);
+        if (/^\s*</.test(txt)) {
+          diag(head + 'ردّ قوقل صفحة تسجيل دخول لا بيانات.\nالسبب: السكربت غير منشور «لأي شخص لديه الرابط» (Anyone).\nأعد النشر: Deploy ← Manage deployments ← Edit ← Who has access: Anyone.', 'bad');
+          return;
+        }
+        var ok = false;
+        try { ok = !!JSON.parse(txt).ok; } catch (e) {}
+        if (ok) {
+          diag(head + 'نجح الاتصال، وأُضيفت قضية تجريبية رقمها 4000000000 في الورقة.\n' +
+               'افتح الورقة: إن لم تجدها فالسكربت يكتب في ورقة أو تبويب غير الذي تقرأ منه المتابعة.\n' +
+               'واحذف السطر التجريبي بعد الاطلاع.\nردّ السكربت: ' + txt, 'ok');
+        } else {
+          diag(head + 'وصل الطلب لكن السكربت لم يضف.\nغالباً نسخة السكربت قديمة لا تعرف الأمر add.\nردّ السكربت: ' + txt, 'bad');
+        }
+      })
+      .catch(function (e) {
+        diag('تعذر الوصول إلى الرابط أصلاً.\nالسبب: الرابط خطأ أو حُذف نشره أو لا إنترنت.\n' + (e && e.message ? e.message : ''), 'bad');
+      });
   }
 
   function pickCircuit(btn) {
@@ -245,9 +298,12 @@
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(body)
     })
-      .then(function (r) { return r.json(); })
-      .then(function (out) {
+      .then(function (r) { return r.text(); })
+      .then(function (raw) {
+        var out = null;
+        try { out = JSON.parse(raw); } catch (e) {}
         btn.disabled = false;
+        if (!out) { msg('ردّ غير مفهوم من السكربت — اضغط ⚙ ثم «فحص الاتصال» لمعرفة السبب.', 'bad'); return; }
         if (out && out.ok) {
           try { localStorage.setItem(CIRC_KEY, circuit); } catch (e) {}
           msg('أُضيفت القضية ' + caseNo + ' — ' + circuit.replace('الدائرة ', ''), 'ok');
@@ -681,6 +737,7 @@
   window.toggleSetup = toggleSetup;
   window.toggleExtra = toggleExtra;
   window.saveUrl = saveUrl;
+  window.testUrl = testUrl;
   window.pickCircuit = pickCircuit;
   window.send = send;
 
