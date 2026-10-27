@@ -55,12 +55,6 @@
   #msg { margin-top: 12px; font-size: 16px; line-height: 1.9; min-height: 24px; }
   #msg.ok { color: #2e7d32; }
   #msg.bad { color: #c62828; }
-  #diag { display: none; margin-top: 10px; padding: 10px 12px; border-radius: 8px;
-          background: #f5f7f8; border: 1px solid #cfd8dc; font-size: 14px; line-height: 1.9;
-          white-space: pre-wrap; word-break: break-word; }
-  #diag.on { display: block; }
-  #diag.ok { background: #e8f5e9; border-color: #a5d6a7; color: #1b5e20; }
-  #diag.bad { background: #ffebee; border-color: #ef9a9a; color: #b71c1c; }
 
   /* القراءة من صورة */
   .pick-row { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 14px; }
@@ -182,7 +176,7 @@
     <div id="msg"></div>
   </div>
 
-  <div class="foot">تاريخ النسخة: <span id="ver">2026-10-15 الساعة 17:58</span></div>
+  <div class="foot">تاريخ النسخة: <span id="ver">__DATE__</span></div>
 
 </div>
 
@@ -626,7 +620,7 @@
     nums = cands.map(function (x) { return x.n; });
 
     // التام يُحدَّد وحده، والناقص يبقى معروضاً بلا تحديد مع تنبيه
-    found = cands.map(function (x) { return { n: x.n, on: !x.bad }; });
+    found = cands.map(function (x) { return { n: x.n, on: !x.bad, c: x.c }; });
 
     /* القراءات الثلاث قد تختلف في خانة واحدة من الرقم نفسه،
        فالأرجح (الأكثر تكراراً) يبقى محدَّداً والشبيه به يُعرض بلا تحديد ليختاره إن شاء */
@@ -639,7 +633,9 @@
     for (var p = 0; p < found.length; p++) {
       if (!found[p].on) continue;
       for (var q = p + 1; q < found.length; q++) {
-        if (found[q].on && near(found[p].n, found[q].n)) found[q].on = false;
+        // الشبيه يُلغى تحديده فقط إن كانت قراءته أضعف (قراءة OCR خاطئة)،
+        // أما رقمان حقيقيان مختلفان في خانة واحدة وكل منهما ورد مرة فيُحدَّدان معاً
+        if (found[q].on && near(found[p].n, found[q].n) && found[q].c < found[p].c) found[q].on = false;
       }
     }
     if (!found.some(function (x) { return x.on; }) && found.length) found[0].on = true;
@@ -737,7 +733,6 @@
   window.toggleSetup = toggleSetup;
   window.toggleExtra = toggleExtra;
   window.saveUrl = saveUrl;
-  window.testUrl = testUrl;
   window.pickCircuit = pickCircuit;
   window.send = send;
 
