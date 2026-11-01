@@ -18,8 +18,29 @@
   }
 
   /* ===== الشاشة الرئيسية ===== */
-  #home { min-height: 100%; display: flex; flex-direction: column; padding: 28px 18px 18px; }
-  .head { text-align: center; margin-bottom: 26px; }
+  #home { position: relative; min-height: 100%; display: flex; flex-direction: column; padding: 28px 18px 18px; }
+  .head { text-align: center; margin-bottom: 26px; padding: 0 56px; }
+
+  /* قائمة النسخ الاحتياطية: ثلاث شرطات في أعلى الصفحة */
+  .home-menu-btn {
+    position: absolute; top: 10px; left: 10px; z-index: 5;
+    width: 48px; height: 48px; border-radius: 10px;
+    border: 1px solid #cfd8dc; background: #fff; color: #37474f;
+    font-size: 26px; line-height: 1; cursor: pointer; font-family: inherit;
+  }
+  .home-menu {
+    display: none; position: absolute; top: 66px; left: 10px; z-index: 6;
+    min-width: 250px; background: #fff; border: 1px solid #cfd8dc; border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.12); overflow: hidden;
+  }
+  .home-menu.open { display: block; }
+  .home-menu button {
+    display: block; width: 100%; padding: 14px 18px; border: 0; background: none;
+    text-align: right; font-size: 20px; font-family: inherit; color: #37474f; cursor: pointer;
+  }
+  .home-menu button + button { border-top: 1px solid #eceff1; }
+  .home-menu button:hover { background: #eceff1; }
+  .home-menu-status { padding: 10px 18px; font-size: 16px; color: #607d8b; border-top: 1px solid #eceff1; line-height: 1.5; }
   .head h1 {
     color: #1b5e20;
     font-size: 30px;
@@ -281,10 +302,19 @@
 <body>
 
 <div id="home">
+  <button type="button" class="home-menu-btn" onclick="toggleHomeMenu(event)" aria-label="القائمة" title="نسخ احتياطي">☰</button>
+  <div class="home-menu" id="home-menu" onclick="event.stopPropagation()">
+    <button type="button" onclick="backupAll(); closeHomeMenu()">حفظ نسخة كاملة</button>
+    <button type="button" onclick="document.getElementById('restore-file').click()">استرجاع نسخة</button>
+    <button type="button" id="auto-pick-btn" onclick="pickBackupFolder(); closeHomeMenu()">اختيار مجلد الحفظ التلقائي</button>
+    <button type="button" id="auto-enable-btn" style="display:none" onclick="enableAutoSave()">تفعيل الحفظ التلقائي</button>
+    <div class="home-menu-status" id="auto-status" style="display:none"></div>
+  </div>
+  <input type="file" id="restore-file" accept=".html,text/html" style="display:none" onchange="restoreAll(this)">
   <div class="head">
     <h1>إعداد الدراسة للقضايا الجنائية</h1>
     <p>محكمة الاستئناف بمكة المكرمة — إعداد/ محمد حسن العُمري</p>
-    <p class="ver">تاريخ النسخة: 2026-11-01 الساعة 22:53</p>
+    <p class="ver">تاريخ النسخة: 2026-11-01 الساعة 23:32</p>
   </div>
 
   <div class="entries" id="entries"></div>
@@ -672,6 +702,262 @@ function openForm(key) {
 }
 
 // الرجوع للرئيسية لا يُغلق شيئاً: الأقسام تبقى كما تركتها
+// ===== نسخة احتياطية كاملة: كل بيانات البرنامج (الجلسات والمتابعة والتسبيبات والأنظمة والمسودة وغيرها) =====
+var BACKUP_APP = 'judicial_portal_full';
+
+function toggleHomeMenu(e) {
+  e.stopPropagation();
+  document.getElementById('home-menu').classList.toggle('open');
+}
+function closeHomeMenu() {
+  var m = document.getElementById('home-menu');
+  if (m) m.classList.remove('open');
+}
+document.addEventListener('click', closeHomeMenu);
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// تُجمع كل مفاتيح المتصفح الخاصة بالبرنامج؛ مفاتيح الفحص (__t) تُستثنى
+function collectAllStorage() {
+  var data = {};
+  for (var i = 0; i < localStorage.length; i++) {
+    var k = localStorage.key(i);
+    if (!k || k.indexOf('__t') === 0) continue;
+    data[k] = localStorage.getItem(k);
+  }
+  return data;
+}
+
+function buildBackupHtml(data, now) {
+  var payload = { app: BACKUP_APP, version: 1, exportedAt: now.toISOString(), data: data };
+  // تمنع الرموز الحادة داخل البيانات أن تنهي كتلة السكربت مبكراً
+  var json = JSON.stringify(payload).replace(/</g, '\\u003c');
+  var keys = Object.keys(data);
+  var when = now.toLocaleString('ar-SA');
+  var items = keys.map(function (k) { return '<li>' + escapeHtml(k) + '</li>'; }).join('');
+
+  return (
+    '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>نسخة احتياطية كاملة</title></head>' +
+    '<body style="font-family:sans-serif;margin:0;padding:16px;line-height:1.8;font-size:18px;color:#263238">' +
+    '<h2 style="color:#1b5e20;margin:0 0 8px">نسخة احتياطية كاملة</h2>' +
+    '<p style="margin:0">تاريخ الحفظ: ' + escapeHtml(when) + '</p>' +
+    '<p style="margin:0 0 12px">عدد البنود المحفوظة: ' + keys.length + '</p>' +
+    '<p style="color:#78909c">لاستعادة البيانات افتح البرنامج واختر «استرجاع نسخة» من القائمة، ولا تعدّل محتوى هذا الملف.</p>' +
+    '<details><summary>تفاصيل البنود</summary><ul style="direction:ltr;text-align:left">' + items + '</ul></details>' +
+    '<script type="application/json" id="backup-data">' + json + '<\/script>' +
+    '</body></html>');
+}
+
+function backupAll() {
+  var data;
+  try { data = collectAllStorage(); }
+  catch (e) { alert('تعذّر قراءة البيانات من المتصفح.'); return; }
+
+  var now = new Date();
+  var html = buildBackupHtml(data, now);
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'نسخة_كاملة_' + now.toISOString().slice(0, 10) + '.html';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+// ===== الحفظ التلقائي إلى مجلد يختاره المستخدم (Chrome وEdge على الكمبيوتر) =====
+var AUTO_FILE_NAME = 'نسخة_البرنامج_الاحتياطية.html';
+var AUTO_CHECK_MS = 30 * 60 * 1000;   // فحص تغيّر اليوم؛ الحفظ نفسه مرة واحدة يومياً
+var AUTO_LAST_KEY = 'judicial_auto_last_v1';
+var backupDir = null;      // مقبض المجلد
+var lastAutoJson = null;   // آخر بيانات حُفظت، لتجنب الكتابة دون تغيير
+var lastAutoTime = null;
+
+function fsSupported() { return typeof window.showDirectoryPicker === 'function'; }
+
+function openBackupDb() {
+  return new Promise(function (res, rej) {
+    var r = indexedDB.open('judicial_backup_db', 1);
+    r.onupgradeneeded = function () { r.result.createObjectStore('h'); };
+    r.onsuccess = function () { res(r.result); };
+    r.onerror = function () { rej(r.error); };
+  });
+}
+function idbPutDir(dir) {
+  return openBackupDb().then(function (db) {
+    return new Promise(function (res, rej) {
+      var tx = db.transaction('h', 'readwrite');
+      tx.objectStore('h').put(dir, 'dir');
+      tx.oncomplete = function () { res(); };
+      tx.onerror = function () { rej(tx.error); };
+    });
+  });
+}
+function idbGetDir() {
+  return openBackupDb().then(function (db) {
+    return new Promise(function (res, rej) {
+      var q = db.transaction('h', 'readonly').objectStore('h').get('dir');
+      q.onsuccess = function () { res(q.result || null); };
+      q.onerror = function () { rej(q.error); };
+    });
+  });
+}
+
+function ensureDirPermission(request) {
+  if (!backupDir) return Promise.resolve(false);
+  var opts = { mode: 'readwrite' };
+  return backupDir.queryPermission(opts).then(function (s) {
+    if (s === 'granted') return true;
+    if (request && s === 'prompt') {
+      return backupDir.requestPermission(opts).then(function (r) { return r === 'granted'; });
+    }
+    return false;
+  }).catch(function () { return false; });
+}
+
+function getLastAutoTime() {
+  if (lastAutoTime) return lastAutoTime;
+  try {
+    var t = localStorage.getItem(AUTO_LAST_KEY);
+    return t ? new Date(t) : null;
+  } catch (e) { return null; }
+}
+
+// هل حُفظت نسخة في اليوم الحالي (بتوقيت الجهاز)؟
+function lastSavedToday() {
+  var a = getLastAutoTime();
+  if (!a) return false;
+  var n = new Date();
+  return a.getFullYear() === n.getFullYear() && a.getMonth() === n.getMonth() && a.getDate() === n.getDate();
+}
+
+function autoSaveNow(force) {
+  if (!backupDir) return Promise.resolve(false);
+  var data;
+  try { data = collectAllStorage(); } catch (e) { return Promise.resolve(false); }
+  var json = JSON.stringify(data);
+  if (!force && lastSavedToday()) return Promise.resolve(false);
+  return ensureDirPermission(false).then(function (ok) {
+    if (!ok) { updateAutoStatus(true); return false; }
+    var html = buildBackupHtml(data, new Date());
+    return backupDir.getFileHandle(AUTO_FILE_NAME, { create: true })
+      .then(function (fh) { return fh.createWritable(); })
+      .then(function (w) { return w.write(html).then(function () { return w.close(); }); })
+      .then(function () {
+        lastAutoJson = json;
+        lastAutoTime = new Date();
+        try { localStorage.setItem(AUTO_LAST_KEY, lastAutoTime.toISOString()); } catch (e) {}
+        updateAutoStatus(false);
+        return true;
+      })
+      .catch(function () { updateAutoStatus(true); return false; });
+  });
+}
+
+function pickBackupFolder() {
+  if (!fsSupported()) {
+    alert('هذا المتصفح لا يدعم الحفظ التلقائي إلى مجلد. استخدم Chrome أو Edge على الكمبيوتر.');
+    return;
+  }
+  window.showDirectoryPicker({ mode: 'readwrite' }).then(function (dir) {
+    backupDir = dir;
+    lastAutoJson = null;
+    return idbPutDir(dir).catch(function () {}).then(function () { return autoSaveNow(true); });
+  }).catch(function (e) {
+    if (e && e.name !== 'AbortError') alert('تعذّر اختيار المجلد.');
+  }).then(function () { updateAutoStatus(); });
+}
+
+// تفعيل الإذن يحتاج نقرة من المستخدم، لذلك يُطلب من زر في القائمة
+function enableAutoSave() {
+  ensureDirPermission(true).then(function (ok) {
+    if (ok) autoSaveNow(false);
+    updateAutoStatus(!ok);
+  });
+}
+
+function updateAutoStatus(needsPermission) {
+  var st = document.getElementById('auto-status');
+  var eb = document.getElementById('auto-enable-btn');
+  var pb = document.getElementById('auto-pick-btn');
+  if (!st || !eb || !pb) return;
+  if (!fsSupported()) {
+    st.textContent = 'الحفظ التلقائي غير متاح في هذا المتصفح';
+    st.style.display = 'block'; eb.style.display = 'none'; pb.style.display = 'none';
+    return;
+  }
+  pb.style.display = 'block';
+  if (!backupDir) {
+    st.textContent = 'الحفظ التلقائي: لم يُختر مجلد بعد';
+    eb.style.display = 'none';
+  } else if (needsPermission) {
+    st.textContent = 'الحفظ التلقائي متوقف: يلزم تأكيد الإذن';
+    eb.style.display = 'block';
+  } else {
+    st.textContent = 'الحفظ التلقائي مفعّل (مرة يومياً)' +
+      (getLastAutoTime() ? ' — آخر حفظ ' + getLastAutoTime().toLocaleString('ar-SA') : ' — لم يُحفظ بعد');
+    eb.style.display = 'none';
+  }
+  st.style.display = 'block';
+}
+
+(function initAutoSave() {
+  updateAutoStatus();
+  if (!fsSupported() || typeof indexedDB === 'undefined') return;
+  idbGetDir().then(function (dir) {
+    if (!dir) return;
+    backupDir = dir;
+    return ensureDirPermission(false).then(function (ok) {
+      if (ok) return autoSaveNow(false);
+      updateAutoStatus(true);
+    });
+  }).catch(function () {});
+  setInterval(function () { autoSaveNow(false); }, AUTO_CHECK_MS);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') autoSaveNow(false);
+  });
+  window.addEventListener('pagehide', function () { autoSaveNow(false); });
+})();
+
+function restoreAll(input) {
+  var file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    var m = String(reader.result).match(/<script type="application\/json" id="backup-data">([\s\S]*?)<\/script>/);
+    var payload = null;
+    if (m) { try { payload = JSON.parse(m[1]); } catch (e) { payload = null; } }
+    if (!payload || payload.app !== BACKUP_APP || !payload.data || typeof payload.data !== 'object') {
+      alert('هذا الملف ليس نسخة احتياطية من البرنامج، أو أنه تعرّض للتعديل.');
+      return;
+    }
+    var keys = Object.keys(payload.data);
+    var when = payload.exportedAt ? new Date(payload.exportedAt).toLocaleString('ar-SA') : 'غير معروف';
+    if (!confirm('سيتم استبدال كل البيانات الحالية بالنسخة المحفوظة بتاريخ ' + when +
+                 ' (' + keys.length + ' بند).\n\nهل تريد المتابعة؟')) return;
+    try {
+      var old = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('__t') !== 0) old.push(k);
+      }
+      old.forEach(function (k) { localStorage.removeItem(k); });
+      keys.forEach(function (k) { localStorage.setItem(k, payload.data[k]); });
+    } catch (e) {
+      alert('تعذّر الاسترجاع، ولم تتغير البيانات.');
+      return;
+    }
+    alert('تم الاسترجاع.');
+    location.reload();
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
 function goHome() {
   document.getElementById('viewer').classList.remove('on');
   document.getElementById('home').style.display = 'flex';
