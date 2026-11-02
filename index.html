@@ -314,7 +314,7 @@
   <div class="head">
     <h1>إعداد الدراسة للقضايا الجنائية</h1>
     <p>محكمة الاستئناف بمكة المكرمة — إعداد/ محمد حسن العُمري</p>
-    <p class="ver">تاريخ النسخة: 2026-11-02 الساعة 13:26</p>
+    <p class="ver">تاريخ النسخة: 2026-11-02 الساعة 13:34</p>
   </div>
 
   <div class="entries" id="entries"></div>
@@ -724,7 +724,7 @@ function collectAllStorage() {
   var data = {};
   for (var i = 0; i < localStorage.length; i++) {
     var k = localStorage.key(i);
-    if (!k || k.indexOf('__t') === 0) continue;
+    if (!k || k.indexOf('__t') === 0 || k === 'judicial_auto_last_v1') continue;
     data[k] = localStorage.getItem(k);
   }
   return data;
@@ -771,7 +771,7 @@ function backupAll() {
 
 // ===== الحفظ التلقائي إلى مجلد يختاره المستخدم (Chrome وEdge على الكمبيوتر) =====
 var AUTO_FILE_NAME = 'نسخة_البرنامج_الاحتياطية.html';
-var AUTO_CHECK_MS = 30 * 60 * 1000;   // فحص تغيّر اليوم؛ الحفظ نفسه مرة واحدة يومياً
+var AUTO_CHECK_MS = 5 * 60 * 1000;    // كل 5 دقائق، ويُكتب الملف فقط إذا تغيّرت البيانات
 var AUTO_LAST_KEY = 'judicial_auto_last_v1';
 var backupDir = null;      // مقبض المجلد
 var lastAutoJson = null;   // آخر بيانات حُفظت، لتجنب الكتابة دون تغيير
@@ -779,13 +779,22 @@ var lastAutoTime = null;
 
 function fsSupported() { return typeof window.showDirectoryPicker === 'function'; }
 
-function openBackupDb() {
+// أي عملية تخزين لا تنتهي خلال مدة معقولة تُعدّ فاشلة، حتى لا تبقى الحالة معلّقة
+function withTimeout(promise, ms) {
   return new Promise(function (res, rej) {
+    var t = setTimeout(function () { rej(new Error('timeout')); }, ms);
+    promise.then(function (v) { clearTimeout(t); res(v); }, function (e) { clearTimeout(t); rej(e); });
+  });
+}
+
+function openBackupDb() {
+  return withTimeout(new Promise(function (res, rej) {
     var r = indexedDB.open('judicial_backup_db', 1);
     r.onupgradeneeded = function () { r.result.createObjectStore('h'); };
     r.onsuccess = function () { res(r.result); };
     r.onerror = function () { rej(r.error); };
-  });
+    r.onblocked = function () { rej(new Error('blocked')); };
+  }), 4000);
 }
 function idbPutDir(dir) {
   return openBackupDb().then(function (db) {
@@ -799,11 +808,11 @@ function idbPutDir(dir) {
 }
 function idbGetDir() {
   return openBackupDb().then(function (db) {
-    return new Promise(function (res, rej) {
+    return withTimeout(new Promise(function (res, rej) {
       var q = db.transaction('h', 'readonly').objectStore('h').get('dir');
       q.onsuccess = function () { res(q.result || null); };
       q.onerror = function () { rej(q.error); };
-    });
+    }), 4000);
   });
 }
 
@@ -840,7 +849,7 @@ function autoSaveNow(force) {
   var data;
   try { data = collectAllStorage(); } catch (e) { return Promise.resolve(false); }
   var json = JSON.stringify(data);
-  if (!force && lastSavedToday()) return Promise.resolve(false);
+  if (!force && json === lastAutoJson) return Promise.resolve(false);
   return ensureDirPermission(false).then(function (ok) {
     if (!ok) { updateAutoStatus(true); return false; }
     var html = buildBackupHtml(data, new Date());
@@ -866,10 +875,11 @@ function pickBackupFolder() {
   window.showDirectoryPicker({ mode: 'readwrite' }).then(function (dir) {
     backupDir = dir;
     lastAutoJson = null;
-    return idbPutDir(dir).then(function () { return true; }, function () {
+    // الحفظ يبدأ فوراً، والتذكّر في المتصفح يجري بالتوازي
+    idbPutDir(dir).catch(function () {
       alert('تعذّر تذكّر المجلد في المتصفح. سيعمل الحفظ الآن، لكن المجلد قد يُنسى عند إغلاق الصفحة.');
-      return false;
-    }).then(function () { return autoSaveNow(true); });
+    });
+    return autoSaveNow(true);
   }).catch(function (e) {
     if (e && e.name !== 'AbortError') alert('تعذّر اختيار المجلد.');
   }).then(function () { updateAutoStatus(); });
@@ -921,7 +931,13 @@ function updateAutoStatus(needsPermission) {
       if (ok) return autoSaveNow(false);
       updateAutoStatus(true);
     });
-  }).catch(function () { updateAutoStatus(); });
+  }).catch(function () {
+    backupDir = null;
+    var st1 = document.getElementById('auto-status');
+    if (st1) st1.textContent = 'تعذّر قراءة المجلد المحفوظ في المتصفح. اختر المجلد من جديد من «اختيار مجلد الحفظ التلقائي».';
+    var pb1 = document.getElementById('auto-pick-btn');
+    if (pb1) pb1.style.display = 'block';
+  });
   setInterval(function () { autoSaveNow(false); }, AUTO_CHECK_MS);
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') autoSaveNow(false);
