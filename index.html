@@ -314,7 +314,7 @@
   <div class="head">
     <h1>إعداد الدراسة للقضايا الجنائية</h1>
     <p>محكمة الاستئناف بمكة المكرمة — إعداد/ محمد حسن العُمري</p>
-    <p class="ver">تاريخ النسخة: 2026-11-01 الساعة 23:32</p>
+    <p class="ver">تاريخ النسخة: 2026-11-02 الساعة 13:26</p>
   </div>
 
   <div class="entries" id="entries"></div>
@@ -810,7 +810,7 @@ function idbGetDir() {
 function ensureDirPermission(request) {
   if (!backupDir) return Promise.resolve(false);
   var opts = { mode: 'readwrite' };
-  return backupDir.queryPermission(opts).then(function (s) {
+  return Promise.resolve().then(function () { return backupDir.queryPermission(opts); }).then(function (s) {
     if (s === 'granted') return true;
     if (request && s === 'prompt') {
       return backupDir.requestPermission(opts).then(function (r) { return r === 'granted'; });
@@ -866,7 +866,10 @@ function pickBackupFolder() {
   window.showDirectoryPicker({ mode: 'readwrite' }).then(function (dir) {
     backupDir = dir;
     lastAutoJson = null;
-    return idbPutDir(dir).catch(function () {}).then(function () { return autoSaveNow(true); });
+    return idbPutDir(dir).then(function () { return true; }, function () {
+      alert('تعذّر تذكّر المجلد في المتصفح. سيعمل الحفظ الآن، لكن المجلد قد يُنسى عند إغلاق الصفحة.');
+      return false;
+    }).then(function () { return autoSaveNow(true); });
   }).catch(function (e) {
     if (e && e.name !== 'AbortError') alert('تعذّر اختيار المجلد.');
   }).then(function () { updateAutoStatus(); });
@@ -891,14 +894,15 @@ function updateAutoStatus(needsPermission) {
     return;
   }
   pb.style.display = 'block';
+  var folder = backupDir && backupDir.name ? ' — المجلد: ' + backupDir.name : '';
   if (!backupDir) {
     st.textContent = 'الحفظ التلقائي: لم يُختر مجلد بعد';
     eb.style.display = 'none';
   } else if (needsPermission) {
-    st.textContent = 'الحفظ التلقائي متوقف: يلزم تأكيد الإذن';
+    st.textContent = 'الحفظ التلقائي متوقف' + folder + '. اضغط «تفعيل الحفظ التلقائي» لتأكيد الإذن';
     eb.style.display = 'block';
   } else {
-    st.textContent = 'الحفظ التلقائي مفعّل (مرة يومياً)' +
+    st.textContent = 'الحفظ التلقائي مفعّل (مرة يومياً)' + folder +
       (getLastAutoTime() ? ' — آخر حفظ ' + getLastAutoTime().toLocaleString('ar-SA') : ' — لم يُحفظ بعد');
     eb.style.display = 'none';
   }
@@ -908,14 +912,16 @@ function updateAutoStatus(needsPermission) {
 (function initAutoSave() {
   updateAutoStatus();
   if (!fsSupported() || typeof indexedDB === 'undefined') return;
+  var st0 = document.getElementById('auto-status');
+  if (st0) { st0.textContent = 'جارٍ التحقق من مجلد الحفظ التلقائي…'; st0.style.display = 'block'; }
   idbGetDir().then(function (dir) {
-    if (!dir) return;
+    if (!dir) { updateAutoStatus(); return; }
     backupDir = dir;
     return ensureDirPermission(false).then(function (ok) {
       if (ok) return autoSaveNow(false);
       updateAutoStatus(true);
     });
-  }).catch(function () {});
+  }).catch(function () { updateAutoStatus(); });
   setInterval(function () { autoSaveNow(false); }, AUTO_CHECK_MS);
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') autoSaveNow(false);
